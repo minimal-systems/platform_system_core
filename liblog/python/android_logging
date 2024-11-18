@@ -1,0 +1,13 @@
+#!/usr/bin/python3
+
+
+
+# write to dev/log/console
+def alogd(log)
+
+def aloge(log)
+
+def alogi(log)
+
+def alogw(log)
+    print(log_tag+" "+ log)

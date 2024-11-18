@@ -1,0 +1,51 @@
+# Android init.rc for setting up /home directory
+
+on init
+    # Base directory
+    mkdir /home 0700 kjones kjones
+    chmod 0700 /home
+    chown kjones:kjones /home
+
+    # Subdirectories
+    mkdir /home/.android 0700 kjones kjones
+    mkdir /home/bin 0755 kjones kjones
+    mkdir /home/.cache 0700 kjones kjones
+    mkdir /home/.cargo 0700 kjones kjones
+    mkdir /home/.config 0700 kjones kjones
+    mkdir /home/Desktop 0700 kjones kjones
+    mkdir /home/Documents 0755 kjones kjones
+    mkdir /home/Downloads 0755 kjones kjones
+    mkdir /home/.gnupg 0700 kjones kjones
+    mkdir /home/.gnupg.backup 0700 kjones kjones
+    mkdir /home/.gradle 0700 kjones kjones
+    mkdir /home/Music 0755 kjones kjones
+    mkdir /home/Pictures 0755 kjones kjones
+    mkdir /home/Public 0755 kjones kjones
+    mkdir /home/Templates 0755 kjones kjones
+    mkdir /home/Videos 0755 kjones kjones
+
+    # Sample hidden files
+    write /home/.bash_history ""
+    chmod 0600 /home/.bash_history
+    write /home/.bash_logout "# Logout script"
+    chmod 0644 /home/.bash_logout
+    write /home/.bash_profile "# Profile settings"
+    chmod 0644 /home/.bash_profile
+    write /home/.bashrc "# Bash RC file"
+    chmod 0644 /home/.bashrc
+    write /home/.gitconfig "# Git configuration"
+    chmod 0755 /home/.gitconfig
+
+    # Log file
+    write /home/logcat.log ""
+    chmod 0644 /home/logcat.log
+
+    # Optional configurations for tools
+    mkdir /home/.vscode 0755 kjones kjones
+    mkdir /home/.oh-my-zsh 0755 kjones kjones
+    write /home/.zshrc "# ZSH configuration"
+    chmod 0644 /home/.zshrc
+
+    # Symlink examples
+    symlink /home/Downloads /home/latest_download
+    symlink /home/Documents /home/recent_docs

@@ -1,0 +1,25 @@
+# Custom init.rc for Linux-based Android systems
+# Focused on disabling Magic SysRq and handling early mounts
+import usr/share/etc/init/hw/init.environ.rc
+import usr/share/etc/init/hw/init.usb.rc
+import usr/share/etc/init/hw/init.${ro_hardware}.rc
+
+
+on init
+    # Disable Magic SysRq
+    write /proc/sys/kernel/sysrq 0
+    chown root root /proc/sys/kernel/sysrq
+    chmod 0644 /proc/sys/kernel/sysrq
+
+on early-init
+    # Early mounts for Linux-based Android systems
+    mkdir /run 0755 root root
+    mount tmpfs tmpfs /run mode=0755
+    mkdir /mnt 0755 root root
+    mkdir /mnt/media_rw 0770 root media_rw
+    mkdir /mnt/user 0755 root root
+
+on boot
+    # Ensure that /run is mounted
+    mount tmpfs tmpfs /run mode=0755
+

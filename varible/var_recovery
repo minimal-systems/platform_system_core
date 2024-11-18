@@ -1,0 +1,61 @@
+#!/bin/bash
+
+mount_none() {
+    mkdir -p $1
+}
+
+fuse_mount() {
+    echo fuse is mounted at $RANDOM/$1
+}
+import () {
+    source $1
+}
+
+link() {
+    ln -sfv $1 $2
+}
+
+symlink() {
+    ln -sf $1
+}
+
+
+trigger (){
+    $1
+}
+
+start (){
+    source sbin/$1
+}
+
+
+clean (){
+    rm -rfv $1
+}
+
+service (){
+    $1
+}
+
+setprop (){
+    cp dev/_properties_ dev/_properties_$RANDOM_
+    echo "$1" >> dev/_properties_
+    . dev/_properties_
+}
+
+import_props () {
+    cat default.prop > dev/_properties_
+}
+
+
+start (){
+    $1
+}
+
+
+import_props (){
+    cp dev/_properties_ dev/_properties_old_
+    echo 0 > dev/_properties_
+    cat system/build.prop default.prop system/vendor/build.prop odm/build.prop  >> dev/_properties_
+    . dev/_properties_
+}

@@ -1,0 +1,62 @@
+#!/bin/bash
+
+
+import () {
+echo "imported  $1 " >> var/log/import.log
+source $1
+}
+
+service () {
+$1
+}
+
+mount_none() {
+mkdir -p $1
+}
+
+fuse_mount() {
+echo fuse is mounted at $RANDOM/$1
+}
+
+link() {
+ln -sfv $1 $2
+}
+
+symlink() {
+ln -sf $1
+}
+
+copy () {
+cp -r $1
+}
+
+
+trigger (){
+$1
+}
+
+setprop (){
+echo "$@" >> dev/properties
+. dev/properties
+}
+
+
+copyprop (){
+cp dev/properties dev/properties_old
+cat system/build.prop default.prop system/vendor/build.prop odm/build.prop  > dev/properties
+. dev/properties
+}
+
+
+start (){
+$1
+}
+
+clean (){
+rm -rfv $1
+}
+
+bind_mount () {
+mkdir -p $2
+ln -sf $(pwd)/$1 $2
+}

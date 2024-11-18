@@ -1,0 +1,70 @@
+# Generic init.usb.rc for Linux Host Environment
+
+on init
+    # Create directories for USB functionality
+    mkdir /dev/bus/usb 0755 root root
+    mkdir /config/usb_gadget 0755 root root
+    mkdir /config/usb_gadget/g1 0755 root root
+    mkdir /config/usb_gadget/g1/configs/b.1 0755 root root
+    mkdir /config/usb_gadget/g1/functions 0755 root root
+
+    # Set up default permissions for USB devices
+    chmod 0660 /dev/bus/usb/*
+    chown root:usb /dev/bus/usb/*
+
+on boot
+    # Configure Linux USB gadgets
+    # Set vendor and product ID for Linux USB
+    write /sys/kernel/config/usb_gadget/g1/idVendor 0x1d6b  # Linux Foundation Vendor ID
+    write /sys/kernel/config/usb_gadget/g1/idProduct 0x0104 # Multifunction Composite Gadget
+    write /sys/kernel/config/usb_gadget/g1/strings/0x409/manufacturer "Linux Host"
+    write /sys/kernel/config/usb_gadget/g1/strings/0x409/product "USB Composite Gadget"
+    write /sys/kernel/config/usb_gadget/g1/strings/0x409/serialnumber "123456789ABCDEF"
+
+    # Enable Mass Storage Functionality
+    mkdir /mnt/media_rw 0770 root media_rw
+    write /sys/kernel/config/usb_gadget/g1/functions/mass_storage.0/lun.0/file /dev/sda
+    write /sys/kernel/config/usb_gadget/g1/functions/mass_storage.0/lun.0/ro 0
+    write /sys/kernel/config/usb_gadget/g1/functions/mass_storage.0/lun.0/removable 1
+    write /sys/kernel/config/usb_gadget/g1/configs/b.1/strings/0x409/configuration "Mass Storage"
+    ln -s /sys/kernel/config/usb_gadget/g1/functions/mass_storage.0 /sys/kernel/config/usb_gadget/g1/configs/b.1/
+
+    # Enable USB Ethernet (RNDIS or CDC ECM)
+    mkdir /sys/kernel/config/usb_gadget/g1/functions/rndis.0
+    write /sys/kernel/config/usb_gadget/g1/functions/rndis.0/host_addr 02:00:00:00:00:01
+    write /sys/kernel/config/usb_gadget/g1/functions/rndis.0/dev_addr 02:00:00:00:00:02
+    ln -s /sys/kernel/config/usb_gadget/g1/functions/rndis.0 /sys/kernel/config/usb_gadget/g1/configs/b.1/
+
+    # Bind USB gadget to UDC (USB Device Controller)
+    write /sys/kernel/config/usb_gadget/g1/UDC $(ls /sys/class/udc | head -n 1)
+
+# Permissions for USB devices
+/dev/bus/usb/*    0660 root usb
+/dev/input/*      0660 root input
+/dev/video*       0660 root video
+/dev/snd/*        0660 root audio
+
+# Specific configurations for webcams and audio devices
+on boot
+    chmod 0660 /dev/video*
+    chmod 0660 /dev/snd/*
+    chown root:video /dev/video*
+    chown root:audio /dev/snd*
+
+# Dynamic USB function switching
+on property:sys.usb.config=mtp
+    # Enable MTP
+    mkdir /sys/kernel/config/usb_gadget/g1/functions/mtp.0
+    ln -s /sys/kernel/config/usb_gadget/g1/functions/mtp.0 /sys/kernel/config/usb_gadget/g1/configs/b.1/
+    write /sys/kernel/config/usb_gadget/g1/UDC $(ls /sys/class/udc | head -n 1)
+
+on property:sys.usb.config=mass_storage
+    # Enable mass storage
+    mkdir /sys/kernel/config/usb_gadget/g1/functions/mass_storage.0
+    ln -s /sys/kernel/config/usb_gadget/g1/functions/mass_storage.0 /sys/kernel/config/usb_gadget/g1/configs/b.1/
+    write /sys/kernel/config/usb_gadget/g1/UDC $(ls /sys/class/udc | head -n 1)
+
+on property:sys.usb.config=none
+    # Disable USB functions
+    rm -f /sys/kernel/config/usb_gadget/g1/configs/b.1/*
+    write /sys/kernel/config/usb_gadget/g1/UDC ""

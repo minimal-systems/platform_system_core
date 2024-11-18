@@ -1,0 +1,9 @@
+on init
+    # Set global environment variables
+    export LINUX_BOOTLOGO 1
+    export LINUX_ROOT /
+    export LINUX_ASSETS /usr/share
+    export LINUX_DATA /home
+    export LINUX_STORAGE /run/media
+    export EXTERNAL_STORAGE /mnt/media_rw
+    export ASEC_MOUNTPOINT /mnt/asec

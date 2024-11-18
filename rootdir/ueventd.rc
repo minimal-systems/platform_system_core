@@ -1,0 +1,60 @@
+# Linux equivalent of ueventd.rc
+
+# Set permissions and ownership for key device nodes
+/dev/block/*       0660 root disk
+/dev/input/*       0660 root input
+/dev/graphics/*    0660 root graphics
+/dev/video*        0660 root video
+/dev/snd/*         0660 root audio
+/dev/dsp*          0660 root audio
+/dev/mixer*        0660 root audio
+/dev/tty*          0660 root tty
+/dev/null          0666 root root
+/dev/zero          0666 root root
+/dev/full          0666 root root
+/dev/random        0666 root root
+/dev/urandom       0666 root root
+
+# USB device nodes
+/dev/bus/usb/*     0660 root usb
+/dev/usb/*         0660 root usb
+
+# WiFi device nodes
+/dev/wlan*         0660 root wifi
+
+# GPU and display device nodes
+/dev/dri/card*     0660 root graphics
+/dev/fb*           0660 root graphics
+
+# Set permissions for serial and modem devices
+/dev/ttyUSB*       0660 root dialout
+/dev/ttyS*         0660 root dialout
+/dev/modem*        0660 root dialout
+
+# Permissions for GPIO and I2C interfaces
+/dev/gpio*         0660 root gpio
+/dev/i2c*          0660 root i2c
+
+# Miscellaneous devices
+/dev/hw_random     0660 root root
+/dev/net/tun       0660 root net
+
+# Udev rules for specific hardware events
+SUBSYSTEM=="block", KERNEL=="sd[a-z]", MODE="0660", GROUP="disk"
+SUBSYSTEM=="net", KERNEL=="eth*", MODE="0660", GROUP="network"
+SUBSYSTEM=="usb", ATTR{idVendor}=="XXXX", ATTR{idProduct}=="YYYY", MODE="0660", GROUP="usb"
+
+# Directories and permissions for runtime data
+/mnt/media_rw      0770 root media_rw
+/data              0771 root system
+/cache             0771 root cache
+/storage           0755 root root
+
+# Filesystem permissions
+/sys/kernel/debug  0770 root root
+/sys/block/*       0660 root disk
+/sys/class/*       0660 root root
+
+# Specific configurations for device features
+/sys/devices/system/cpu/cpu*/cpufreq/scaling_governor 0664 root system
+/sys/class/leds/*/brightness                          0664 root system
