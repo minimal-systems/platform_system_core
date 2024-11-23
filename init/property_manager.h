@@ -34,6 +34,10 @@ private:
     PropertyManager& operator=(const PropertyManager&) = delete;
 };
 
+// Global free functions for simplified usage
+void setprop(const std::string& key, const std::string& value);
+std::string getprop(const std::string& key);
+
 } // namespace init
 } // namespace minimal_systems
 

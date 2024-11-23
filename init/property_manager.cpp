@@ -3,6 +3,7 @@
 #include <iostream>
 #include <sstream>
 #include <mutex>
+#include "log_new.h"
 
 namespace minimal_systems {
 namespace init {
@@ -21,7 +22,7 @@ void PropertyManager::loadProperties(const std::string& propertyFile) {
     if (!propertyFile.empty()) {
         std::ifstream file(propertyFile);
         if (!file) {
-            std::cerr << "Failed to open property file: " << propertyFile << std::endl;
+            LOGE("Failed to open property file: %s", propertyFile.c_str());
             return;
         }
 
@@ -31,13 +32,10 @@ void PropertyManager::loadProperties(const std::string& propertyFile) {
             std::string key, value;
             if (std::getline(lineStream, key, '=') && std::getline(lineStream, value)) {
                 properties[key] = value;
+                LOGD("Loaded property from file: %s = %s", key.c_str(), value.c_str());
             }
         }
     }
-
-    // Add default properties if not overridden
-    properties["ro.boot.hardware"] = "generic";
-    properties["ro.boot.mode"] = "normal";
 }
 
 // Save properties to file
@@ -50,13 +48,14 @@ void PropertyManager::saveProperties(const std::string& propertyFile) const {
 
     std::ofstream file(propertyFile, std::ios::trunc);
     if (!file) {
-        std::cerr << "Failed to open property file for writing: " << propertyFile << std::endl;
+        LOGE("Failed to open property file for writing: %s", propertyFile.c_str());
         return;
     }
 
     for (const auto& [key, value] : properties) {
         file << key << "=" << value << "\n";
     }
+    LOGI("Properties saved successfully to %s", propertyFile.c_str());
 }
 
 // Get a property value
@@ -84,17 +83,27 @@ const std::unordered_map<std::string, std::string>& PropertyManager::getAllPrope
     return properties;
 }
 
-// Simplified setprop method
+// Simplified setprop method using set
 void PropertyManager::setprop(const std::string& key, const std::string& value) {
     set(key, value);
-    std::cout << "Property set: " << key << " = " << value << std::endl;
+    LOGD("Property set: %s = %s", key.c_str(), value.c_str());
 }
 
-// Simplified getprop method
+// Simplified getprop method using get
 std::string PropertyManager::getprop(const std::string& key) const {
     auto value = get(key, "");
-    std::cout << "Property get: " << key << " = " << value << std::endl;
+    LOGD("Property get: %s = %s", key.c_str(), value.c_str());
     return value;
+}
+
+// Global getprop function
+std::string getprop(const std::string& key) {
+    return PropertyManager::instance().getprop(key);
+}
+
+// Global setprop function
+void setprop(const std::string& key, const std::string& value) {
+    PropertyManager::instance().setprop(key, value);
 }
 
 } // namespace init
