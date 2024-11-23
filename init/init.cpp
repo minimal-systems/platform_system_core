@@ -6,10 +6,10 @@
 #include "vold.h"
 #include "first_stage_mount.h"
 #include "property_manager.h"
+#include "first_stage_init.h"
+
 #define LOG_TAG "init"
 #include "log_new.h"
-
-
 
 namespace minimal_systems {
 namespace init {
@@ -27,6 +27,13 @@ int main(int argc, char** argv) {
     using namespace minimal_systems::init;
 
     try {
+        // Call FirstStageMain as part of the initialization process
+        LOGI("Starting first stage initialization.");
+        int first_stage_result = FirstStageMain(argc, argv);
+        if (first_stage_result != 0) {
+            LOGE("FirstStageMain failed with result: %d. Exiting...", first_stage_result);
+            return EXIT_FAILURE;
+        }
 
         // Initialize the PropertyManager
         auto& props = PropertyManager::instance();

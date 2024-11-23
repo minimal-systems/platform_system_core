@@ -7,6 +7,7 @@ LOCAL_SRC_FILES += \
   selinux.cpp \
   init_parser.cpp \
   first_stage_mount.cpp \
+  first_stage_init.cpp \
   logprint.cpp \
   logger_write.cpp \
   property_manager.cpp \
