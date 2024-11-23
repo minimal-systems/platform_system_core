@@ -7,11 +7,13 @@
 namespace minimal_systems {
 namespace init {
 
+// Singleton instance
 PropertyManager& PropertyManager::instance() {
     static PropertyManager instance;
     return instance;
 }
 
+// Load properties from file
 void PropertyManager::loadProperties(const std::string& propertyFile) {
     std::lock_guard<std::mutex> lock(property_mutex);
     properties.clear();
@@ -38,6 +40,7 @@ void PropertyManager::loadProperties(const std::string& propertyFile) {
     properties["ro.boot.mode"] = "normal";
 }
 
+// Save properties to file
 void PropertyManager::saveProperties(const std::string& propertyFile) const {
     std::lock_guard<std::mutex> lock(property_mutex);
 
@@ -56,6 +59,7 @@ void PropertyManager::saveProperties(const std::string& propertyFile) const {
     }
 }
 
+// Get a property value
 std::string PropertyManager::get(const std::string& key, const std::string& defaultValue) const {
     std::lock_guard<std::mutex> lock(property_mutex);
 
@@ -66,16 +70,31 @@ std::string PropertyManager::get(const std::string& key, const std::string& defa
     return defaultValue;
 }
 
+// Set a property value
 void PropertyManager::set(const std::string& key, const std::string& value) {
     std::lock_guard<std::mutex> lock(property_mutex);
 
     properties[key] = value;
 }
 
+// Get all properties
 const std::unordered_map<std::string, std::string>& PropertyManager::getAllProperties() const {
     std::lock_guard<std::mutex> lock(property_mutex);
 
     return properties;
+}
+
+// Simplified setprop method
+void PropertyManager::setprop(const std::string& key, const std::string& value) {
+    set(key, value);
+    std::cout << "Property set: " << key << " = " << value << std::endl;
+}
+
+// Simplified getprop method
+std::string PropertyManager::getprop(const std::string& key) const {
+    auto value = get(key, "");
+    std::cout << "Property get: " << key << " = " << value << std::endl;
+    return value;
 }
 
 } // namespace init
