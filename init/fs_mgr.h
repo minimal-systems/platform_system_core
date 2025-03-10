@@ -13,8 +13,9 @@ bool GetKernelCmdline(const std::string& key, std::string* value);
 bool GetBootconfig(const std::string& key, std::string* value);
 
 /**
- * @brief Runs a filesystem check on a specified device based on its filesystem type.
- * 
+ * @brief Runs a filesystem check on a specified device based on its filesystem
+ * type.
+ *
  * @param device The path to the device to be checked.
  * @param filesystem The filesystem type (e.g., ext4, fat32).
  * @return True if the filesystem check is successful, false otherwise.
@@ -27,9 +28,10 @@ bool MountPartition(const std::string& device, const std::string& mount_point,
 
 /**
  * @brief Prepares and mounts an overlay filesystem.
- * 
+ *
  * @param mount_point The target mount point for the overlay filesystem.
- * @return True if the overlay filesystem was successfully mounted (or simulated), false otherwise.
+ * @return True if the overlay filesystem was successfully mounted (or
+ * simulated), false otherwise.
  */
 bool MountOverlayFs(const std::string& mount_point);
 

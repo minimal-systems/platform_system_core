@@ -40,7 +40,8 @@ class Timer {
   Timer() : start_(boot_clock::now()) {}
 
   std::chrono::milliseconds duration() const {
-    return std::chrono::duration_cast<std::chrono::milliseconds>(boot_clock::now() - start_);
+    return std::chrono::duration_cast<std::chrono::milliseconds>(
+        boot_clock::now() - start_);
   }
 
  private:

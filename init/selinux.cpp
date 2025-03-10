@@ -1,214 +1,225 @@
+/*
+ * Copyright (C) 2025 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ */
+
 #define LOG_TAG "selinux"
 
 #include "selinux.h"
-#include "util.h"
+
+#include <dirent.h>
+#include <minimal_systems/log.h>
+#include <sys/stat.h>
+
+#include <algorithm>
+#include <fstream>
+#include <memory>
+#include <thread>
+#include <vector>
+
 #include "boot_clock.h"
-#include "property_manager.h"
 #include "fs_mgr.h"
 #include "log_new.h"
-#include <fstream>
-#include <dirent.h>
-#include <cstring>
-#include <sys/stat.h>
-#include <memory>
-
+#include "property_manager.h"
+#include "util.h"
 
 namespace minimal_systems {
 namespace init {
 
-const std::vector<std::string> selinux_whitelist = {
-    "/etc/selinux",
-    "/oem/etc/selinux",
-    "/usr/share/etc/selinux"
+// Hardened SELinux directories for major Linux distributions
+static const std::vector<std::string> kSelinuxWhitelist = {
+    "/etc/selinux",        // Standard SELinux config
+    "/usr/share/selinux",  // Common SELinux policy storage
+    "/usr/etc/selinux",    // Some distributions use this
+    "/lib/selinux",        // SELinux modules and libraries
+    "/run/selinux",        // Runtime SELinux directory
 };
 
 std::unique_ptr<SELinuxEntry> selinux_entries_head;
+bool selinux_disabled_permanently = false;
 
+/**
+ * Determine SELinux enforcing status from system properties.
+ */
 EnforcingStatus StatusFromProperty() {
-    std::string value;
-    if (minimal_systems::fs_mgr::GetKernelCmdline("sysboot.selinux", &value) && value == "permissive") {
-        return SELINUX_PERMISSIVE;
-    }
-    if (minimal_systems::fs_mgr::GetBootconfig("sysboot.selinux", &value) && value == "permissive") {
-        return SELINUX_PERMISSIVE;
-    }
-    return SELINUX_ENFORCING;
+  std::string value;
+  if (minimal_systems::fs_mgr::GetKernelCmdline("sysboot.selinux", &value) &&
+      value == "permissive") {
+    return SELINUX_PERMISSIVE;
+  }
+  if (minimal_systems::fs_mgr::GetBootconfig("sysboot.selinux", &value) &&
+      value == "permissive") {
+    return SELINUX_PERMISSIVE;
+  }
+  return SELINUX_ENFORCING;
 }
 
+/**
+ * Check if SELinux is enforcing, considering overrides.
+ */
 bool IsEnforcing() {
-#ifdef ALLOW_PERMISSIVE_SELINUX
-    return StatusFromProperty() == SELINUX_ENFORCING;
-#else
-    return true;
-#endif
-}
-
-bool is_whitelisted_path(const std::string& path) {
-    for (const auto& whitelist_path : selinux_whitelist) {
-        if (whitelist_path == path) {
-            return true;
-        }
-    }
+  if (selinux_disabled_permanently) {
     return false;
-}
-
-void store_selinux_entry(const std::string& entry) {
-    auto new_entry = std::make_unique<SELinuxEntry>();
-    new_entry->entry = entry;
-    new_entry->next = std::move(selinux_entries_head);
-    selinux_entries_head = std::move(new_entry);
-}
-
-void parse_selinux_config(const std::string& filepath) {
-    std::ifstream file(filepath);
-    if (!file.is_open()) {
-        LOGE("Failed to open SELinux config file: %s", filepath.c_str());
-        return;
-    }
-
-    auto& props = PropertyManager::instance();
-
-    std::string line;
-    std::string selinux_state = "unknown";
-    std::string selinux_type = "unknown";
-
-    LOGI("Parsing SELinux configuration from %s", filepath.c_str());
-    while (std::getline(file, line)) {
-        line.erase(0, line.find_first_not_of(" \t")); // Trim leading whitespace
-
-        if (line.empty() || line[0] == '#') {
-            continue;
-        }
-
-        if (line.find("SELINUX=") == 0) {
-            selinux_state = line.substr(8);
-        } else if (line.find("SELINUXTYPE=") == 0) {
-            selinux_type = line.substr(12);
-        }
-    }
-
-    if (selinux_state == "disabled") {
-        LOGW("SELinux is disabled in the configuration. Switching to permissive mode.");
-        selinux_state = "permissive";
-        props.set("ro.sysboot.selinux", "false");
-    } else {
-        props.set("ro.sysboot.selinux", "true");
-    }
-
-    props.set("ro.boot.selinux", selinux_state);
-    props.set("ro.boot.selinux_type", selinux_type);
-
-    LOGI("SELinux state: %s", selinux_state.c_str());
-    LOGI("SELinux type: %s", selinux_type.c_str());
-}
-
-void parse_cmdline_for_selinux() {
-    std::ifstream file("/proc/cmdline");
-    if (!file.is_open()) {
-        LOGE("Unable to read /proc/cmdline");
-        return;
-    }
-
-    auto& props = PropertyManager::instance();
-
-    std::string cmdline;
-    if (std::getline(file, cmdline)) {
-        if (cmdline.find("sysboot.selinux.permissive=true") != std::string::npos) {
-            LOGW("Detected SELinux permissive mode from kernel command line.");
-            props.set("ro.sysboot.selinux", "false");
-        }
-    }
-}
-
-void parse_selinux_file(const std::string& filepath) {
-    std::ifstream file(filepath);
-    if (!file.is_open()) {
-        LOGE("Failed to open SELinux policy file: %s", filepath.c_str());
-        return;
-    }
-
-    std::string line;
-    LOGI("Parsing SELinux policy from file: %s", filepath.c_str());
-    while (std::getline(file, line)) {
-        if (line.empty() || line[0] == '#' || line.find("system_u:object_") == std::string::npos) {
-            continue;
-        }
-
-        store_selinux_entry(line);
-    }
-}
-
-void traverse_and_parse(const std::string& dir_path) {
-    DIR* dir = opendir(dir_path.c_str());
-    if (!dir) {
-        LOGE("Failed to open SELinux directory: %s", dir_path.c_str());
-        return;
-    }
-
-    struct dirent* entry;
-    while ((entry = readdir(dir)) != nullptr) {
-        if (std::strcmp(entry->d_name, ".") == 0 || std::strcmp(entry->d_name, "..") == 0) {
-            continue;
-        }
-
-        std::string full_path = dir_path + "/" + entry->d_name;
-
-        if (entry->d_type == DT_DIR) {
-            traverse_and_parse(full_path);
-        } else if (entry->d_type == DT_REG) {
-            parse_selinux_file(full_path);
-        }
-    }
-
-    closedir(dir);
-}
-
-int SetupSelinux(char** argv) {
-    SetStdioToDevNull(argv);
-    InitKernelLogging(argv);
-
-    //TODO: Implement reboot to bootloader on SELinux panic
-    //if (REBOOT_BOOTLOADER_ON_PANIC) {
-    //    InstallRebootSignalHandlers();
-    //}
-
-
-    bool loaded = false;
-    auto& props = PropertyManager::instance();
-    LOGI("Starting SELinux initialization.");
-
-    parse_selinux_config("/etc/selinux/config");
-    parse_cmdline_for_selinux();
-
-    for (const auto& selinux_path : selinux_whitelist) {
-        LOGI("Scanning SELinux directory: %s", selinux_path.c_str());
-        traverse_and_parse(selinux_path);
-        loaded = true;
-    }
-
-    if (!loaded) {
-        LOGE("No valid SELinux policy found in whitelisted directories.");
-        return 0;
-    }
-
-    std::string selinux_mode = props.get("ro.boot.selinux", "enforcing");
-    if (selinux_mode == "permissive") {
-        LOGI("SELinux is in permissive mode.");
-    } else {
-        LOGI("SELinux is in enforcing mode.");
-    }
-
-    return 1;
-}
-
-#ifndef RECOVERY_INIT
-int load_selinux_ignored() {
-    LOGI("Skipping SELinux initialization (RECOVERY_INIT not defined).");
-    auto& props = PropertyManager::instance();
-    props.set("ro.selinux_ignored_enabled", "true");
-    return 0;
-}
+  }
+#ifdef ALLOW_PERMISSIVE_SELINUX
+  return StatusFromProperty() == SELINUX_ENFORCING;
+#else
+  return true;
 #endif
+}
+
+/**
+ * Check if a given path is whitelisted for SELinux policy scanning.
+ */
+bool IsWhitelistedPath(const std::string& path) {
+  return std::find(kSelinuxWhitelist.begin(), kSelinuxWhitelist.end(), path) !=
+         kSelinuxWhitelist.end();
+}
+
+/**
+ * Store SELinux entries for debugging and policy analysis.
+ */
+void StoreSELinuxEntry(const std::string& entry) {
+  auto new_entry = std::make_unique<SELinuxEntry>();
+  new_entry->entry = entry;
+  new_entry->next = std::move(selinux_entries_head);
+  selinux_entries_head = std::move(new_entry);
+}
+
+/**
+ * Parse the SELinux configuration file and set system properties.
+ */
+bool ParseSELinuxConfig(const std::string& filepath) {
+  std::ifstream file(filepath);
+  if (!file.is_open()) {
+    LOGE("Error: Unable to open SELinux configuration file at '%s'.",
+         filepath.c_str());
+    return false;
+  }
+
+  auto& props = PropertyManager::instance();
+  std::string line, selinux_state = "unknown", selinux_type = "unknown";
+
+  LOGI("Parsing SELinux configuration from '%s'.", filepath.c_str());
+  while (std::getline(file, line)) {
+    line.erase(0, line.find_first_not_of(" \t"));
+
+    if (line.empty() || line[0] == '#') continue;
+
+    if (line.find("SELINUX=") == 0) {
+      selinux_state = line.substr(8);
+    } else if (line.find("SELINUXTYPE=") == 0) {
+      selinux_type = line.substr(12);
+    }
+  }
+
+  props.set("ro.boot.selinux",
+            selinux_state == "disabled" ? "permissive" : selinux_state);
+  props.set("ro.boot.selinux_type", selinux_type);
+
+  LOGI("SELinux state set to '%s'.", selinux_state.c_str());
+  LOGI("SELinux policy type set to '%s'.", selinux_type.c_str());
+
+  return true;
+}
+
+/**
+ * Parse a SELinux policy file and store valid entries.
+ */
+bool ParseSELinuxFile(const std::string& filepath) {
+  std::ifstream file(filepath);
+  if (!file.is_open()) {
+    LOGE("Error: Failed to open SELinux policy file '%s'.", filepath.c_str());
+    return false;
+  }
+
+  std::string line;
+  LOGI("Processing SELinux policy file: '%s'.", filepath.c_str());
+  while (std::getline(file, line)) {
+    if (line.empty() || line[0] == '#' ||
+        line.find("system_u:object_") == std::string::npos) {
+      continue;
+    }
+    StoreSELinuxEntry(line);
+  }
+
+#if !LOG_NDEBUG
+  LOGD("Debug: Finished parsing SELinux policy file '%s'.", filepath.c_str());
+#endif
+  return true;
+}
+
+/**
+ * Traverse a given directory for SELinux policy files.
+ */
+bool TraverseAndParse(const std::string& dir_path) {
+  DIR* dir = opendir(dir_path.c_str());
+  if (!dir) {
+    LOGE("Error: Unable to access SELinux directory '%s'.", dir_path.c_str());
+    return false;
+  }
+
+  struct dirent* entry;
+  bool found_policy = false;
+
+  while ((entry = readdir(dir)) != nullptr) {
+    if (std::strcmp(entry->d_name, ".") == 0 ||
+        std::strcmp(entry->d_name, "..") == 0) {
+      continue;
+    }
+
+    std::string full_path = dir_path + "/" + entry->d_name;
+
+    if (entry->d_type == DT_REG) {
+      if (ParseSELinuxFile(full_path)) {
+        found_policy = true;
+      }
+    }
+  }
+
+  closedir(dir);
+  return found_policy;
+}
+
+/**
+ * Initialize SELinux and apply policy settings.
+ */
+int SetupSelinux(char** argv) {
+  SetStdioToDevNull(argv);
+  InitKernelLogging(argv);
+
+  auto& props = PropertyManager::instance();
+  LOGI("Initializing SELinux setup...");
+
+  bool config_loaded = ParseSELinuxConfig("/etc/selinux/config");
+  bool policy_loaded = false;
+
+  for (const auto& selinux_path : kSelinuxWhitelist) {
+    LOGI("Scanning SELinux policy directory: '%s'.", selinux_path.c_str());
+    if (TraverseAndParse(selinux_path)) {
+      policy_loaded = true;
+    }
+  }
+
+  if (!config_loaded || !policy_loaded) {
+    LOGE(
+        "Critical: No valid SELinux policies or configuration files found. "
+        "Disabling SELinux permanently.");
+    selinux_disabled_permanently = true;
+    props.set("ro.boot.selinux", "permissive");
+    return 0;
+  }
+
+  std::string selinux_mode = props.get("ro.boot.selinux", "enforcing");
+  LOGI("SELinux mode is set to '%s'.", selinux_mode.c_str());
+
+#if !LOG_NDEBUG
+  LOGD("Debug: SELinux initialization complete.");
+#endif
+
+  return 1;
+}
 
 }  // namespace init
 }  // namespace minimal_systems

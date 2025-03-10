@@ -1,7 +1,6 @@
 LOCAL_PATH=system/core/init
 LOCAL_MODULE = init
 
-
 LOCAL_SRC_FILES += \
   init.cpp \
   selinux.cpp \
@@ -15,7 +14,6 @@ LOCAL_SRC_FILES += \
   verify.cpp \
   util.cpp \
   boot_clock.cpp \
-
 
 CFLAGS +=  \
   -g \
@@ -37,7 +35,14 @@ LOCAL_CLANG=true
 LOCAL_C_INCLUDES +=  \
   logging/include
 
-LD_FLAGS += -lssl -lcrypto
+#Optimization for faster linking using GNU ld
+LD_FLAGS += -fuse-ld=mold \
+            -Wl,--gc-sections \
+            -Wl,--as-needed \
+            -Wl,--strip-debug \
+            -Wl,--hash-style=gnu \
+            -Wl,--exclude-libs,ALL \
+            -lssl -lcrypto
 
 INCLUDE_RECOVERY_EXECUTABLE=true
 include $(BUILD_EXECUTABLE)

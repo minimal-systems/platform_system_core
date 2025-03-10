@@ -1,9 +1,9 @@
 #ifndef MINIMAL_SYSTEMS_INIT_SELINUX_H_
 #define MINIMAL_SYSTEMS_INIT_SELINUX_H_
 
+#include <memory>
 #include <string>
 #include <vector>
-#include <memory>
 
 namespace minimal_systems {
 namespace init {
@@ -11,8 +11,8 @@ namespace init {
 enum EnforcingStatus { SELINUX_PERMISSIVE, SELINUX_ENFORCING };
 
 struct SELinuxEntry {
-    std::string entry;
-    std::unique_ptr<SELinuxEntry> next;
+  std::string entry;
+  std::unique_ptr<SELinuxEntry> next;
 };
 
 EnforcingStatus StatusFromProperty();

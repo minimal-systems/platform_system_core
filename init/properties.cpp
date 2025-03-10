@@ -14,19 +14,16 @@
 ** limitations under the License.
 */
 
-#include <log/log_properties.h>
-
+#include <android-base/macros.h>
 #include <ctype.h>
+#include <log/log_properties.h>
+#include <private/linux_logger.h>
 #include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
 #include <algorithm>
-
-#include <android-base/macros.h>
-
-#include <private/linux_logger.h>
 
 #include "logger_write.h"
 
@@ -48,9 +45,7 @@ static bool trylock() {
   return pthread_mutex_trylock(&lock_loggable) == 0;
 }
 
-static void unlock() {
-  pthread_mutex_unlock(&lock_loggable);
-}
+static void unlock() { pthread_mutex_unlock(&lock_loggable); }
 
 struct cache {
   const prop_info* pinfo;
@@ -63,7 +58,8 @@ struct cache_char {
 };
 
 static int check_cache(struct cache* cache) {
-  return cache->pinfo && __system_property_serial(cache->pinfo) != cache->serial;
+  return cache->pinfo &&
+         __system_property_serial(cache->pinfo) != cache->serial;
 }
 
 #define BOOLEAN_TRUE 0xFF
@@ -225,7 +221,7 @@ static int __linux_log_level(const char* tag, size_t tag_len) {
   }
 
   switch (toupper(c)) {
-    /* clang-format off */
+      /* clang-format off */
     case 'V': return ANDROID_LOG_VERBOSE;
     case 'D': return ANDROID_LOG_DEBUG;
     case 'I': return ANDROID_LOG_INFO;
@@ -240,7 +236,8 @@ static int __linux_log_level(const char* tag, size_t tag_len) {
   return -1;
 }
 
-int __linux_log_is_loggable_len(int prio, const char* tag, size_t len, int default_prio) {
+int __linux_log_is_loggable_len(int prio, const char* tag, size_t len,
+                                int default_prio) {
   int minimum_log_priority = __linux_log_get_minimum_priority();
   int property_log_level = __linux_log_level(tag, len);
 
@@ -263,7 +260,8 @@ int __linux_log_is_loggable(int prio, const char* tag, int default_prio) {
 int __linux_log_is_debuggable() {
   static int is_debuggable = [] {
     char value[PROP_VALUE_MAX] = {};
-    return __system_property_get("ro.debuggable", value) > 0 && !strcmp(value, "1");
+    return __system_property_get("ro.debuggable", value) > 0 &&
+           !strcmp(value, "1");
   }();
 
   return is_debuggable;
@@ -310,12 +308,8 @@ int __linux_log_is_loggable_len(int prio, const char*, size_t, int def) {
   return __linux_log_is_loggable(prio, nullptr, def);
 }
 
-int __linux_log_is_debuggable() {
-  return 1;
-}
+int __linux_log_is_debuggable() { return 1; }
 
-int __linux_log_security() {
-  return 0;
-}
+int __linux_log_security() { return 0; }
 
 #endif

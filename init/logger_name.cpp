@@ -15,6 +15,7 @@
 */
 
 #include <string.h>
+
 #include <type_traits>
 
 #include "log.h"
@@ -40,10 +41,12 @@ const char* linux_log_id_to_name(log_id_t log_id) {
   return LOG_NAME[log_id];
 }
 
-static_assert(std::is_same<std::underlying_type<log_id_t>::type, uint32_t>::value,
-              "log_id_t must be an uint32_t");
+static_assert(
+    std::is_same<std::underlying_type<log_id_t>::type, uint32_t>::value,
+    "log_id_t must be an uint32_t");
 
-static_assert(std::is_same<std::underlying_type<linux_LogPriority>::type, uint32_t>::value,
+static_assert(std::is_same<std::underlying_type<linux_LogPriority>::type,
+                           uint32_t>::value,
               "log_id_t must be an uint32_t");
 
 log_id_t android_name_to_log_id(const char* logName) {

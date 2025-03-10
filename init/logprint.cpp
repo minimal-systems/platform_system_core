@@ -1,18 +1,18 @@
 
-# include <logging/list.h>
-#include <log/logprint.h>
-# include <string>
 #include <assert.h>
-# include <cstring>
-# include <vector>
-# include <list>
-# include <limits.h>
-# include <inttypes.h>
-# include <cctype>
-
+#include <inttypes.h>
+#include <limits.h>
 #include <log/log.h>
 #include <log/log_read.h>
+#include <log/logprint.h>
+#include <logging/list.h>
 #include <private/linux_logger.h>
+
+#include <cctype>
+#include <cstring>
+#include <list>
+#include <string>
+#include <vector>
 
 #define MS_PER_NSEC 1000000
 #define US_PER_NSEC 1000
@@ -114,7 +114,7 @@ static linux_LogPriority filterCharToPri(char c) {
 
 static char filterPriToChar(linux_LogPriority pri) {
   switch (pri) {
-    /* clang-format off */
+      /* clang-format off */
     case LINUX_LOG_VERBOSE: return 'V';
     case LINUX_LOG_DEBUG:   return 'D';
     case LINUX_LOG_INFO:    return 'I';
@@ -132,7 +132,7 @@ static char filterPriToChar(linux_LogPriority pri) {
 
 static int colorFromPri(linux_LogPriority pri) {
   switch (pri) {
-    /* clang-format off */
+      /* clang-format off */
     case LINUX_LOG_VERBOSE: return LINUX_COLOR_DEFAULT;
     case LINUX_LOG_DEBUG:   return LINUX_COLOR_BLUE;
     case LINUX_LOG_INFO:    return LINUX_COLOR_GREEN;
@@ -148,10 +148,12 @@ static int colorFromPri(linux_LogPriority pri) {
   }
 }
 
-static linux_LogPriority filterPriForTag(LinuxLogFormat* p_format, const char* tag) {
+static linux_LogPriority filterPriForTag(LinuxLogFormat* p_format,
+                                         const char* tag) {
   FilterInfo* p_curFilter;
 
-  for (p_curFilter = p_format->filters; p_curFilter != NULL; p_curFilter = p_curFilter->p_next) {
+  for (p_curFilter = p_format->filters; p_curFilter != NULL;
+       p_curFilter = p_curFilter->p_next) {
     if (0 == strcmp(tag, p_curFilter->mTag)) {
       if (p_curFilter->mPri == LINUX_LOG_DEFAULT) {
         return p_format->global_pri;
@@ -169,7 +171,7 @@ static linux_LogPriority filterPriForTag(LinuxLogFormat* p_format, const char* t
  * and tag, and 0 if it should not
  */
 int linux_log_shouldPrintLine(LinuxLogFormat* p_format, const char* tag,
-                                linux_LogPriority pri) {
+                              linux_LogPriority pri) {
   return pri >= filterPriForTag(p_format, tag);
 }
 
@@ -220,7 +222,8 @@ void linux_log_format_free(LinuxLogFormat* p_format) {
   }
 }
 
-int linux_log_setPrintFormat(LinuxLogFormat* p_format, LinuxLogPrintFormat format) {
+int linux_log_setPrintFormat(LinuxLogFormat* p_format,
+                             LinuxLogPrintFormat format) {
   switch (format) {
     case FORMAT_MODIFIER_COLOR:
       p_format->colored_output = true;
@@ -271,9 +274,7 @@ class TzSetter {
     tzset();
   }
 
-  ~TzSetter() { 
-    free(old_tz_); 
-  }
+  ~TzSetter() { free(old_tz_); }
 
   void Reset() {
     if (old_tz_) {
@@ -309,7 +310,7 @@ LinuxLogPrintFormat linux_log_formatFromString(const char* formatString) {
   if (!strcmp(formatString, "monotonic")) return FORMAT_MODIFIER_MONOTONIC;
   if (!strcmp(formatString, "uid")) return FORMAT_MODIFIER_UID;
   if (!strcmp(formatString, "descriptive")) return FORMAT_MODIFIER_DESCRIPT;
-    /* clang-format on */
+  /* clang-format on */
 
   return FORMAT_OFF;
 }
@@ -323,7 +324,8 @@ LinuxLogPrintFormat linux_log_formatFromString(const char* formatString) {
  * Assumes single threaded execution
  */
 
-int LINUX_LOG_addFilterRule(LinuxLogFormat* p_format, const char* filterExpression) {
+int LINUX_LOG_addFilterRule(LinuxLogFormat* p_format,
+                            const char* filterExpression) {
   size_t tagNameLength;
   linux_LogPriority pri = LINUX_LOG_DEFAULT;
 
@@ -417,7 +419,8 @@ static char* strsep(char** stringp, const char* delim) {
  * Assumes single threaded execution
  *
  */
-int LINUX_LOG_addFilterString(LinuxLogFormat* p_format, const char* filterString) {
+int LINUX_LOG_addFilterString(LinuxLogFormat* p_format,
+                              const char* filterString) {
   char* filterStringCopy = strdup(filterString);
   char* p_cur = filterStringCopy;
   char* p_ret;
@@ -467,8 +470,8 @@ int linux_log_processLogBuffer(struct logger_entry* buf, LinuxLogEntry* entry) {
    * msg
    *   starts at buf + buf->hdr_size + 1 + len(tag) + 1
    *
-   * The message may have been truncated.  When that happens, we must null-terminate the message
-   * ourselves.
+   * The message may have been truncated.  When that happens, we must
+   * null-terminate the message ourselves.
    */
   if (buf->len < 3) {
     /*
@@ -484,7 +487,9 @@ int linux_log_processLogBuffer(struct logger_entry* buf, LinuxLogEntry* entry) {
 
   int i;
   if (buf->hdr_size < sizeof(logger_entry)) {
-    fprintf(stderr, "+++ LOG: hdr_size must be at least as big as struct logger_entry\n");
+    fprintf(
+        stderr,
+        "+++ LOG: hdr_size must be at least as big as struct logger_entry\n");
     return -1;
   }
   char* msg = reinterpret_cast<char*>(buf) + buf->hdr_size;
@@ -565,9 +570,10 @@ enum objectType {
   TYPE_MONOTONIC = 's'
 };
 
-static int linux_log_printBinaryEvent(const unsigned char** pEventData, size_t* pEventDataLen,
-                                        char** pOutBuf, size_t* pOutBufLen, const char** fmtStr,
-                                        size_t* fmtLen) {
+static int linux_log_printBinaryEvent(const unsigned char** pEventData,
+                                      size_t* pEventDataLen, char** pOutBuf,
+                                      size_t* pOutBufLen, const char** fmtStr,
+                                      size_t* fmtLen) {
   const unsigned char* eventData = *pEventData;
   size_t eventDataLen = *pEventDataLen;
   char* outBuf = *pOutBuf;
@@ -649,10 +655,12 @@ static int linux_log_printBinaryEvent(const unsigned char** pEventData, size_t* 
     }
 
     if (findChar(&cp, &len, '|') && findChar(&cp, &len, INT_MAX)) {
-      static const unsigned char typeTable[] = {EVENT_TYPE_INT, EVENT_TYPE_LONG, EVENT_TYPE_STRING,
-                                                EVENT_TYPE_LIST, EVENT_TYPE_FLOAT};
+      static const unsigned char typeTable[] = {
+          EVENT_TYPE_INT, EVENT_TYPE_LONG, EVENT_TYPE_STRING, EVENT_TYPE_LIST,
+          EVENT_TYPE_FLOAT};
 
-      if ((*cp >= '1') && (*cp < (char)('1' + (sizeof(typeTable) / sizeof(typeTable[0])))) &&
+      if ((*cp >= '1') &&
+          (*cp < (char)('1' + (sizeof(typeTable) / sizeof(typeTable[0])))) &&
           (type != typeTable[(size_t)(*cp - '1')]))
         len = 0;
 
@@ -685,7 +693,8 @@ static int linux_log_printBinaryEvent(const unsigned char** pEventData, size_t* 
         return -1;
       }
       {
-        auto* event_long = reinterpret_cast<const linux_event_long_t*>(eventData);
+        auto* event_long =
+            reinterpret_cast<const linux_event_long_t*>(eventData);
         lval = event_long->data;
       }
       eventData += sizeof(linux_event_long_t);
@@ -704,7 +713,8 @@ static int linux_log_printBinaryEvent(const unsigned char** pEventData, size_t* 
       /* float */
       {
         if (eventDataLen < sizeof(linux_event_float_t)) return -1;
-        auto* event_float = reinterpret_cast<const linux_event_float_t*>(eventData);
+        auto* event_float =
+            reinterpret_cast<const linux_event_float_t*>(eventData);
         float fval = event_float->data;
         eventData += sizeof(linux_event_int_t);
         eventDataLen -= sizeof(linux_event_int_t);
@@ -723,7 +733,8 @@ static int linux_log_printBinaryEvent(const unsigned char** pEventData, size_t* 
       /* UTF-8 chars, not NULL-terminated */
       {
         if (eventDataLen < sizeof(linux_event_string_t)) return -1;
-        auto* event_string = reinterpret_cast<const linux_event_string_t*>(eventData);
+        auto* event_string =
+            reinterpret_cast<const linux_event_string_t*>(eventData);
         unsigned int strLen = event_string->length;
         eventData += sizeof(linux_event_string_t);
         eventDataLen -= sizeof(linux_event_string_t);
@@ -760,7 +771,8 @@ static int linux_log_printBinaryEvent(const unsigned char** pEventData, size_t* 
       /* N items, all different types */
       {
         if (eventDataLen < sizeof(linux_event_list_t)) return -1;
-        auto* event_list = reinterpret_cast<const linux_event_list_t*>(eventData);
+        auto* event_list =
+            reinterpret_cast<const linux_event_list_t*>(eventData);
 
         int8_t count = event_list->element_count;
         eventData += sizeof(linux_event_list_t);
@@ -772,8 +784,8 @@ static int linux_log_printBinaryEvent(const unsigned char** pEventData, size_t* 
         outBufLen--;
 
         for (int i = 0; i < count; i++) {
-          result = linux_log_printBinaryEvent(&eventData, &eventDataLen, &outBuf, &outBufLen,
-                                                fmtStr, fmtLen);
+          result = linux_log_printBinaryEvent(
+              &eventData, &eventDataLen, &outBuf, &outBufLen, fmtStr, fmtLen);
           if (result != 0) goto bail;
 
           if (i < (count - 1)) {
@@ -810,14 +822,17 @@ static int linux_log_printBinaryEvent(const unsigned char** pEventData, size_t* 
             do {
               lval /= 1024;
               if ((lval % 1024) != 0) break;
-            } while (++idx < ((sizeof(suffixTable) / sizeof(suffixTable[0])) - 1));
-            outCount = snprintf(outBuf, outBufLen, "%" PRId64 "%cB", lval, suffixTable[idx]);
+            } while (++idx <
+                     ((sizeof(suffixTable) / sizeof(suffixTable[0])) - 1));
+            outCount = snprintf(outBuf, outBufLen, "%" PRId64 "%cB", lval,
+                                suffixTable[idx]);
           } else {
             outCount = snprintf(outBuf, outBufLen, "B");
           }
           break;
         case TYPE_MILLISECONDS:
-          if (((lval <= -1000) || (1000 <= lval)) && (outBufLen || (outBuf[-1] == '0'))) {
+          if (((lval <= -1000) || (1000 <= lval)) &&
+              (outBufLen || (outBuf[-1] == '0'))) {
             /* repaint as (fractional) seconds, possibly saving space */
             if (outBufLen) outBuf[0] = outBuf[-1];
             outBuf[-1] = outBuf[-2];
@@ -854,19 +869,22 @@ static int linux_log_printBinaryEvent(const unsigned char** pEventData, size_t* 
           }
           if (val >= minute) {
             if (val >= hour) {
-              outCount = snprintf(outBuf, outBufLen, "%" PRIu64 ":", (val / hour) % (day / hour));
+              outCount = snprintf(outBuf, outBufLen, "%" PRIu64 ":",
+                                  (val / hour) % (day / hour));
               if (outCount >= outBufLen) break;
               outBuf += outCount;
               outBufLen -= outCount;
             }
             outCount =
-                snprintf(outBuf, outBufLen, (val >= hour) ? "%02" PRIu64 ":" : "%" PRIu64 ":",
+                snprintf(outBuf, outBufLen,
+                         (val >= hour) ? "%02" PRIu64 ":" : "%" PRIu64 ":",
                          (val / minute) % (hour / minute));
             if (outCount >= outBufLen) break;
             outBuf += outCount;
             outBufLen -= outCount;
           }
-          outCount = snprintf(outBuf, outBufLen, (val >= minute) ? "%02" PRIu64 : "%" PRIu64 "s",
+          outCount = snprintf(outBuf, outBufLen,
+                              (val >= minute) ? "%02" PRIu64 : "%" PRIu64 "s",
                               val % minute);
         } break;
         case TYPE_ALLOCATIONS:
@@ -940,7 +958,9 @@ int linux_log_processBinaryLogBuffer(
   entry->tid = buf->tid;
 
   if (buf->hdr_size < sizeof(logger_entry)) {
-    fprintf(stderr, "+++ LOG: hdr_size must be at least as big as struct logger_entry\n");
+    fprintf(
+        stderr,
+        "+++ LOG: hdr_size must be at least as big as struct logger_entry\n");
     return -1;
   }
   eventData = reinterpret_cast<unsigned char*>(buf) + buf->hdr_size;
@@ -987,8 +1007,8 @@ int linux_log_processBinaryLogBuffer(
   int result = 0;
 
   if ((inCount > 0) || fmtLen) {
-    result = linux_log_printBinaryEvent(&eventData, &inCount, &outBuf, &outRemaining, &fmtStr,
-                                          &fmtLen);
+    result = linux_log_printBinaryEvent(&eventData, &inCount, &outBuf,
+                                        &outRemaining, &fmtStr, &fmtLen);
   }
   if ((result == 1) && fmtStr) {
     /* We overflowed :-(, let's repaint the line w/o format dressings */
@@ -996,7 +1016,8 @@ int linux_log_processBinaryLogBuffer(
     eventData += 4;
     outBuf = messageBuf;
     outRemaining = messageBufLen - 1;
-    result = linux_log_printBinaryEvent(&eventData, &inCount, &outBuf, &outRemaining, NULL, NULL);
+    result = linux_log_printBinaryEvent(&eventData, &inCount, &outBuf,
+                                        &outRemaining, NULL, NULL);
   }
   if (result < 0) {
     fprintf(stderr, "Binary log entry conversion failed\n");
@@ -1114,7 +1135,8 @@ static char* readSeconds(char* e, struct timespec* t) {
   return p;
 }
 
-static struct timespec* sumTimespec(struct timespec* left, struct timespec* right) {
+static struct timespec* sumTimespec(struct timespec* left,
+                                    struct timespec* right) {
   left->tv_nsec += right->tv_nsec;
   left->tv_sec += right->tv_sec;
   if (left->tv_nsec >= (long)NS_PER_SEC) {
@@ -1124,7 +1146,8 @@ static struct timespec* sumTimespec(struct timespec* left, struct timespec* righ
   return left;
 }
 
-static struct timespec* subTimespec(struct timespec* result, struct timespec* left,
+static struct timespec* subTimespec(struct timespec* result,
+                                    struct timespec* left,
                                     struct timespec* right) {
   result->tv_nsec = left->tv_nsec - right->tv_nsec;
   result->tv_sec = left->tv_sec - right->tv_sec;
@@ -1139,13 +1162,14 @@ static long long nsecTimespec(struct timespec* now) {
   return (long long)now->tv_sec * NS_PER_SEC + now->tv_nsec;
 }
 
-static void convertMonotonic(struct timespec* result, const AndroidLogEntry* entry) {
+static void convertMonotonic(struct timespec* result,
+                             const AndroidLogEntry* entry) {
   struct listnode* node;
   struct conversionList {
     struct listnode node; /* first */
     struct timespec time;
     struct timespec convert;
-  } * list, *next;
+  } *list, *next;
   struct timespec time, convert;
 
   /* If we do not have a conversion list, build one up */
@@ -1227,15 +1251,18 @@ static void convertMonotonic(struct timespec* result, const AndroidLogEntry* ent
             TzSetter tz(cp);
             time.tv_sec = mktime(&tm);
           }
-          list = static_cast<conversionList*>(calloc(1, sizeof(conversionList)));
+          list =
+              static_cast<conversionList*>(calloc(1, sizeof(conversionList)));
           list_init(&list->node);
           list->time = time;
           subTimespec(&list->convert, &time, &monotonic);
           list_add_tail(&convertHead, &list->node);
         }
         if (suspended_pending && !list_empty(&convertHead)) {
-          list = node_to_item(list_tail(&convertHead), struct conversionList, node);
-          if (subTimespec(&time, subTimespec(&time, &list->time, &list->convert),
+          list = node_to_item(list_tail(&convertHead), struct conversionList,
+                              node);
+          if (subTimespec(&time,
+                          subTimespec(&time, &list->time, &list->convert),
                           &suspended_monotonic)
                   ->tv_sec > 0) {
             /* resume, what is convert factor before? */
@@ -1247,13 +1274,15 @@ static void convertMonotonic(struct timespec* result, const AndroidLogEntry* ent
           time = suspended_monotonic;
           sumTimespec(&time, &convert);
           /* breakpoint just before sleep */
-          list = static_cast<conversionList*>(calloc(1, sizeof(conversionList)));
+          list =
+              static_cast<conversionList*>(calloc(1, sizeof(conversionList)));
           list_init(&list->node);
           list->time = time;
           list->convert = convert;
           list_add_tail(&convertHead, &list->node);
           /* breakpoint just after sleep */
-          list = static_cast<conversionList*>(calloc(1, sizeof(conversionList)));
+          list =
+              static_cast<conversionList*>(calloc(1, sizeof(conversionList)));
           list_init(&list->node);
           list->time = time;
           sumTimespec(&list->time, &suspended_diff);
@@ -1363,8 +1392,8 @@ static void convertMonotonic(struct timespec* result, const AndroidLogEntry* ent
  */
 
 char* linux_log_formatLogLine(LinuxLogFormat* p_format, char* defaultBuffer,
-                                size_t defaultBufferSize, const LinuxLogEntry* entry,
-                                size_t* p_outLength) {
+                              size_t defaultBufferSize,
+                              const LinuxLogEntry* entry, size_t* p_outLength) {
   struct tm tmBuf;
   struct tm* ptm;
   /* good margin, 23+nul for msec, 26+nul for usec, 29+nul to nsec */
@@ -1399,19 +1428,22 @@ char* linux_log_formatLogLine(LinuxLogFormat* p_format, char* defaultBuffer,
   }
   if (p_format->epoch_output || p_format->monotonic_output) {
     ptm = NULL;
-    snprintf(timeBuf, sizeof(timeBuf), p_format->monotonic_output ? "%6lld" : "%19lld",
-             (long long)now);
+    snprintf(timeBuf, sizeof(timeBuf),
+             p_format->monotonic_output ? "%6lld" : "%19lld", (long long)now);
   } else {
     ptm = localtime_r(&now, &tmBuf);
-    strftime(timeBuf, sizeof(timeBuf), &"%Y-%m-%d %H:%M:%S"[p_format->year_output ? 0 : 3], ptm);
+    strftime(timeBuf, sizeof(timeBuf),
+             &"%Y-%m-%d %H:%M:%S"[p_format->year_output ? 0 : 3], ptm);
   }
   len = strlen(timeBuf);
   if (p_format->nsec_time_output) {
     len += snprintf(timeBuf + len, sizeof(timeBuf) - len, ".%09ld", nsec);
   } else if (p_format->usec_time_output) {
-    len += snprintf(timeBuf + len, sizeof(timeBuf) - len, ".%06ld", nsec / US_PER_NSEC);
+    len += snprintf(timeBuf + len, sizeof(timeBuf) - len, ".%06ld",
+                    nsec / US_PER_NSEC);
   } else {
-    len += snprintf(timeBuf + len, sizeof(timeBuf) - len, ".%03ld", nsec / MS_PER_NSEC);
+    len += snprintf(timeBuf + len, sizeof(timeBuf) - len, ".%03ld",
+                    nsec / MS_PER_NSEC);
   }
   if (p_format->zone_output && ptm) {
     strftime(timeBuf + len, sizeof(timeBuf) - len, " %z", ptm);
@@ -1421,8 +1453,8 @@ char* linux_log_formatLogLine(LinuxLogFormat* p_format, char* defaultBuffer,
    * Construct a buffer containing the log header and log message.
    */
   if (p_format->colored_output) {
-    prefixLen =
-        snprintf(prefixBuf, sizeof(prefixBuf), "\x1B[%dm", colorFromPri(entry->priority));
+    prefixLen = snprintf(prefixBuf, sizeof(prefixBuf), "\x1B[%dm",
+                         colorFromPri(entry->priority));
     prefixLen = std::min(prefixLen, sizeof(prefixBuf));
 
     const char suffixContents[] = "\x1B[0m";
@@ -1434,10 +1466,10 @@ char* linux_log_formatLogLine(LinuxLogFormat* p_format, char* defaultBuffer,
   uid[0] = '\0';
   if (p_format->uid_output) {
     if (entry->uid >= 0) {
-/*
- * This code is Android specific, bionic guarantees that
- * calls to non-reentrant getpwuid() are thread safe.
- */
+      /*
+       * This code is Android specific, bionic guarantees that
+       * calls to non-reentrant getpwuid() are thread safe.
+       */
       {
         /* Not worth parsing package list, names all longer than 5 */
         snprintf(uid, sizeof(uid), "%5d:", entry->uid);
@@ -1449,21 +1481,21 @@ char* linux_log_formatLogLine(LinuxLogFormat* p_format, char* defaultBuffer,
 
   switch (p_format->format) {
     case FORMAT_TAG:
-      len = snprintf(prefixBuf + prefixLen, sizeof(prefixBuf) - prefixLen, "%c/%-8.*s: ", priChar,
-                     (int)entry->tagLen, entry->tag);
+      len = snprintf(prefixBuf + prefixLen, sizeof(prefixBuf) - prefixLen,
+                     "%c/%-8.*s: ", priChar, (int)entry->tagLen, entry->tag);
       strcpy(suffixBuf + suffixLen, "\n");
       ++suffixLen;
       break;
     case FORMAT_PROCESS:
-      len = snprintf(suffixBuf + suffixLen, sizeof(suffixBuf) - suffixLen, "  (%.*s)\n",
-                     (int)entry->tagLen, entry->tag);
+      len = snprintf(suffixBuf + suffixLen, sizeof(suffixBuf) - suffixLen,
+                     "  (%.*s)\n", (int)entry->tagLen, entry->tag);
       suffixLen += std::min(len, sizeof(suffixBuf) - suffixLen);
-      len = snprintf(prefixBuf + prefixLen, sizeof(prefixBuf) - prefixLen, "%c(%s%5d) ", priChar,
-                     uid, entry->pid);
+      len = snprintf(prefixBuf + prefixLen, sizeof(prefixBuf) - prefixLen,
+                     "%c(%s%5d) ", priChar, uid, entry->pid);
       break;
     case FORMAT_THREAD:
-      len = snprintf(prefixBuf + prefixLen, sizeof(prefixBuf) - prefixLen, "%c(%s%5d:%5d) ",
-                     priChar, uid, entry->pid, entry->tid);
+      len = snprintf(prefixBuf + prefixLen, sizeof(prefixBuf) - prefixLen,
+                     "%c(%s%5d:%5d) ", priChar, uid, entry->pid, entry->tid);
       strcpy(suffixBuf + suffixLen, "\n");
       ++suffixLen;
       break;
@@ -1475,8 +1507,8 @@ char* linux_log_formatLogLine(LinuxLogFormat* p_format, char* defaultBuffer,
       break;
     case FORMAT_TIME:
       len = snprintf(prefixBuf + prefixLen, sizeof(prefixBuf) - prefixLen,
-                     "%s %c/%-8.*s(%s%5d): ", timeBuf, priChar, (int)entry->tagLen, entry->tag, uid,
-                     entry->pid);
+                     "%s %c/%-8.*s(%s%5d): ", timeBuf, priChar,
+                     (int)entry->tagLen, entry->tag, uid, entry->pid);
       strcpy(suffixBuf + suffixLen, "\n");
       ++suffixLen;
       break;
@@ -1486,24 +1518,24 @@ char* linux_log_formatLogLine(LinuxLogFormat* p_format, char* defaultBuffer,
         *ret = ' ';
       }
       len = snprintf(prefixBuf + prefixLen, sizeof(prefixBuf) - prefixLen,
-                     "%s %s%5d %5d %c %-8.*s: ", timeBuf, uid, entry->pid, entry->tid, priChar,
-                     (int)entry->tagLen, entry->tag);
+                     "%s %s%5d %5d %c %-8.*s: ", timeBuf, uid, entry->pid,
+                     entry->tid, priChar, (int)entry->tagLen, entry->tag);
       strcpy(suffixBuf + suffixLen, "\n");
       ++suffixLen;
       break;
     case FORMAT_LONG:
       len = snprintf(prefixBuf + prefixLen, sizeof(prefixBuf) - prefixLen,
-                     "[ %s %s%5d:%5d %c/%-8.*s ]\n", timeBuf, uid, entry->pid, entry->tid, priChar,
-                     (int)entry->tagLen, entry->tag);
+                     "[ %s %s%5d:%5d %c/%-8.*s ]\n", timeBuf, uid, entry->pid,
+                     entry->tid, priChar, (int)entry->tagLen, entry->tag);
       strcpy(suffixBuf + suffixLen, "\n\n");
       suffixLen += 2;
       prefixSuffixIsHeaderFooter = 1;
       break;
     case FORMAT_BRIEF:
     default:
-      len =
-          snprintf(prefixBuf + prefixLen, sizeof(prefixBuf) - prefixLen,
-                   "%c/%-8.*s(%s%5d): ", priChar, (int)entry->tagLen, entry->tag, uid, entry->pid);
+      len = snprintf(prefixBuf + prefixLen, sizeof(prefixBuf) - prefixLen,
+                     "%c/%-8.*s(%s%5d): ", priChar, (int)entry->tagLen,
+                     entry->tag, uid, entry->pid);
       strcpy(suffixBuf + suffixLen, "\n");
       ++suffixLen;
       break;
@@ -1622,10 +1654,11 @@ char* linux_log_formatLogLine(LinuxLogFormat* p_format, char* defaultBuffer,
 }
 
 size_t linux_log_printLogLine(LinuxLogFormat* p_format, FILE* fp,
-                                const LinuxLogEntry* entry) {
+                              const LinuxLogEntry* entry) {
   char buf[4096] __attribute__((__uninitialized__));
   size_t line_length;
-  char* line = linux_log_formatLogLine(p_format, buf, sizeof(buf), entry, &line_length);
+  char* line =
+      linux_log_formatLogLine(p_format, buf, sizeof(buf), entry, &line_length);
   if (!line) {
     fprintf(stderr, "linux_log_formatLogLine failed\n");
     exit(1);
