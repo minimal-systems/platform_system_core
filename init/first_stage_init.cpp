@@ -12,6 +12,7 @@
 #include <string>
 
 #include "log_new.h"
+#include "verify.h"
 #include "property_manager.h"
 
 namespace minimal_systems {
@@ -97,69 +98,91 @@ int LoadKernelModule(const std::string& module_path) {
 constexpr bool kTestingMode =
     true;  // Set to true to skip module loading errors during testing
 
-int LoadKernelModulesFromFile(const std::string& list_path) {
-  std::ifstream file(list_path);
-  if (!file.is_open()) {
-    LOGE("Cannot open module list: %s", list_path.c_str());
-    return -1;
-  }
-
-  static const std::vector<std::string> kModuleBlocklist = {
-      // Testing Modules
-      "kunit.ko", "kunit-test.ko", "selftests.ko", "regmap-kunit.ko",
-      "soc-utils-test.ko", "platform-test.ko", "input_test.ko",
-      "dev_addr_lists_test.ko", "soc-topology-test.ko", "iio-test-format.ko",
-      "fat_test.ko", "ext4-inode-test.ko", "time_test.ko", "lib_test.ko",
-
-      // Debugging & Headers
-      "kheaders.ko",
-
-      // Redundant or Non-Critical Modules
-      "9pnet.ko", "9pnet_fd.ko", "virtio_console.ko", "virtio_balloon.ko",
-      "tipc_diag.ko", "tls.ko", "ppp_deflate.ko", "ppp_mppe.ko", "ax88796b.ko",
-      "ftdi_sio.ko", "btbcm.ko", "btqca.ko", "btsdio.ko",
-      "ieee802154_socket.ko", "r8153_ecm.ko", "acpi_mdio.ko", "pwrseq-core.ko",
-      "regmap-ram.ko", "regmap-raw-ram.ko", "ptp_vmclock.ko", "ptp_kvm.ko",
-      "macsec.ko", "nhc_hop.ko"};
-
-  std::string module_name;
-  int failed_count = 0;
-
-  while (std::getline(file, module_name)) {
-    if (module_name.empty()) continue;
-
-    // Skip blocklisted modules
-    if (std::find(kModuleBlocklist.begin(), kModuleBlocklist.end(),
-                  module_name) != kModuleBlocklist.end()) {
-      // LOGW("Skipping blocked module: %s", module_name.c_str());
-      continue;
+    int LoadKernelModulesFromFile(const std::string& list_path) {
+        std::ifstream file(list_path);
+        if (!file.is_open()) {
+            LOGE("Cannot open module list: %s", list_path.c_str());
+            return -1;
+        }
+    
+        static const std::vector<std::string> kModuleBlocklist = {
+            // Testing Modules
+            "kunit.ko", "kunit-test.ko", "selftests.ko", "regmap-kunit.ko",
+            "soc-utils-test.ko", "platform-test.ko", "input_test.ko",
+            "dev_addr_lists_test.ko", "soc-topology-test.ko",
+            "iio-test-format.ko", "fat_test.ko", "ext4-inode-test.ko",
+            "time_test.ko", "lib_test.ko",
+    
+            // Debugging & Headers
+            "kheaders.ko",
+    
+            // Non-Critical or Redundant Modules
+            "9pnet.ko", "9pnet_fd.ko", "virtio_console.ko", "virtio_balloon.ko",
+            "tipc_diag.ko", "tls.ko", "ppp_deflate.ko", "ppp_mppe.ko",
+            "ax88796b.ko", "ftdi_sio.ko", "btbcm.ko", "btqca.ko",
+            "btsdio.ko", "ieee802154_socket.ko", "r8153_ecm.ko",
+            "acpi_mdio.ko", "pwrseq-core.ko", "regmap-ram.ko", "regmap-raw-ram.ko",
+            "ptp_vmclock.ko", "ptp_kvm.ko", "macsec.ko", "nhc_hop.ko"
+        };
+    
+        std::string secure_verity_key = getprop("ro.sysboot.secure_verity_key_path");
+        std::string secureboot_sha = getprop("ro.sysboot.secureboot_sha");
+    
+        if (secure_verity_key.empty() || secureboot_sha.empty()) {
+            LOGW("Secure boot properties missing. Verification may be incomplete.");
+        } else {
+            LOGI("Using Secure Boot Key: %s", secure_verity_key.c_str());
+            LOGI("Expected SecureBoot SHA: %s", secureboot_sha.c_str());
+        }
+    
+        std::string module_name;
+        int failed_count = 0;
+    
+        while (std::getline(file, module_name)) {
+            if (module_name.empty()) continue;
+    
+            // Skip blocklisted modules
+            if (std::find(kModuleBlocklist.begin(), kModuleBlocklist.end(), module_name) != kModuleBlocklist.end()) {
+                LOGW("Skipping blocked module: %s", module_name.c_str());
+                continue;
+            }
+    
+            std::string module_path = "./lib/modules/" + module_name;
+    
+            if (kTestingMode) {
+                LOGI("Loaded (test mode): %s", module_name.c_str());
+                continue;
+            }
+    
+            // Secure Boot Verification
+            if (!secureboot_sha.empty()) {
+                std::string computed_sha = ComputeSHA256(module_path);
+                if (computed_sha != secureboot_sha) {
+                    LOGE("Kernel module verification failed: %s (SHA mismatch)", module_name.c_str());
+                    failed_count++;
+                    continue;
+                }
+                LOGI("Verified module: %s (SHA match)", module_name.c_str());
+            }
+    
+            if (LoadKernelModule(module_path) != 0) {
+                setprop("ro.boot.module_load_error", module_name);
+                failed_count++;
+                LOGW("Continuing despite failed module: %s", module_name.c_str());
+            } else {
+                LOGI("Successfully loaded module: %s", module_name.c_str());
+            }
+        }
+    
+        if (failed_count > 0) {
+            LOGW("Kernel modules loaded with %d errors.", failed_count);
+        } else {
+            LOGI("Kernel modules loaded successfully from: %s", list_path.c_str());
+        }
+    
+        return (kTestingMode || failed_count == 0) ? 0 : -1;
     }
-
-    std::string module_path = "./lib/modules/" + module_name;
-
-    if (kTestingMode) {
-      LOGI("Loaded (test mode): %s", module_name.c_str());
-      continue;
-    }
-
-    if (LoadKernelModule(module_path) != 0) {
-      setprop("ro.boot.module_load_error", module_name);
-      failed_count++;
-      LOGW("Continuing despite failed module: %s", module_name.c_str());
-    } else {
-      LOGI("Successfully loaded module: %s", module_name.c_str());
-    }
-  }
-
-  if (failed_count > 0) {
-    LOGW("Kernel modules loaded with %d errors.", failed_count);
-  } else {
-    LOGI("Kernel modules loaded successfully from: %s", list_path.c_str());
-  }
-
-  return (kTestingMode || failed_count == 0) ? 0 : -1;
-}
-
+    
 }  // namespace
 
 BootMode GetBootMode() {
@@ -178,49 +201,48 @@ BootMode GetBootMode() {
  * @return 0 on success; -1 on critical failure.
  */
 int LoadKernelModules() {
-  const std::string primary = "./lib/modules/modules-load.list";
-  const std::string fallback = "./firmware/lib/modules/module_load.list";
-  const std::string custom_modules_path = GetProperty("ro.boot.modules");
-  bool has_errors = false;
+    const std::string primary = "./lib/modules/modules-load.list";
+    const std::string fallback = "./firmware/lib/modules/module_load.list";
+    const std::string custom_modules_path = getprop("ro.boot.modules");
+    bool has_errors = false;
 
-  // Load custom modules if specified
-  if (!custom_modules_path.empty()) {
-    std::string custom_module_list = custom_modules_path + "/modules-load.list";
-    if (FileExists(custom_module_list)) {
-      LOGI("Loading custom kernel modules from: %s",
-           custom_module_list.c_str());
-      setprop("ro.boot.module_load_custom", "1");
-      if (LoadKernelModulesFromFile(custom_module_list) != 0) {
-        LOGW("Errors loading custom kernel modules");
-        has_errors = true;
-      }
+    // Load custom modules if specified
+    if (!custom_modules_path.empty()) {
+        std::string custom_module_list = custom_modules_path + "/modules-load.list";
+        if (FileExists(custom_module_list)) {
+            LOGI("Loading custom kernel modules from: %s", custom_module_list.c_str());
+            setprop("ro.boot.module_load_custom", "1");
+            if (LoadKernelModulesFromFile(custom_module_list) != 0) {
+                LOGW("Errors loading custom kernel modules");
+                has_errors = true;
+            }
+        } else {
+            LOGW("Custom module list not found at: %s", custom_module_list.c_str());
+        }
     } else {
-      LOGW("Custom module list not found at: %s", custom_module_list.c_str());
+        LOGI("No custom modules path specified via ro.boot.modules");
     }
-  } else {
-    LOGI("No custom modules path specified via ro.boot.modules");
-  }
 
-  // Load main kernel modules
-  if (FileExists(primary)) {
-    LOGI("Loading main kernel modules from primary: %s", primary.c_str());
-    setprop("ro.boot.module_load_primary", "1");
-    if (LoadKernelModulesFromFile(primary) != 0) {
-      LOGW("Errors loading main kernel modules from primary path");
-      has_errors = true;
+    // Load main kernel modules
+    if (FileExists(primary)) {
+        LOGI("Loading main kernel modules from primary: %s", primary.c_str());
+        setprop("ro.boot.module_load_primary", "1");
+        if (LoadKernelModulesFromFile(primary) != 0) {
+            LOGW("Errors loading main kernel modules from primary path");
+            has_errors = true;
+        }
+    } else if (FileExists(fallback)) {
+        LOGI("Loading main kernel modules from fallback: %s", fallback.c_str());
+        setprop("ro.boot.module_load_fallback", "1");
+        if (LoadKernelModulesFromFile(fallback) != 0) {
+            LOGW("Errors loading main kernel modules from fallback path");
+            has_errors = true;
+        }
+    } else {
+        LOGW("No main kernel module lists found; skipped loading main modules");
     }
-  } else if (FileExists(fallback)) {
-    LOGI("Loading main kernel modules from fallback: %s", fallback.c_str());
-    setprop("ro.boot.module_load_fallback", "1");
-    if (LoadKernelModulesFromFile(fallback) != 0) {
-      LOGW("Errors loading main kernel modules from fallback path");
-      has_errors = true;
-    }
-  } else {
-    LOGW("No main kernel module lists found; skipped loading main modules");
-  }
 
-  return has_errors ? -1 : 0;
+    return has_errors ? -1 : 0;
 }
 
 std::string ExtractRootUUID(const std::string& cmdline) {
