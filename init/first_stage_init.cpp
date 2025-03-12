@@ -72,12 +72,59 @@ void DetectAndSetGPUType()
 	}
 }
 
+/**
+ * @brief Checks if the system is currently running inside a ramdisk.
+ *
+ * @return true if running inside a ramdisk, false otherwise.
+ */
+bool IsRunningInRamdisk()
+{
+	std::ifstream mounts("/proc/mounts");
+	if (!mounts.is_open()) {
+		LOGE("Failed to open /proc/mounts");
+		return false;
+	}
+
+	std::string line;
+	while (std::getline(mounts, line)) {
+		if (line.find(" / ") != std::string::npos &&
+		    (line.find("tmpfs") != std::string::npos ||
+		     line.find("ramfs") != std::string::npos)) {
+			LOGI("Detected root filesystem is on a ramdisk");
+			return true;
+		}
+	}
+
+	LOGI("Root filesystem is not on a ramdisk");
+	return false;
+}
+
+/**
+ * @brief Frees up both the primary and main ramdisks if running in a ramdisk.
+ */
 void FreeRamdisk()
 {
-	if (umount("/dev/ram0") == 0 && unlink("/dev/ram0") == 0) {
-		LOGI("Ramdisk successfully freed");
-	} else {
-		LOGE("Failed to free ramdisk");
+	if (!IsRunningInRamdisk()) {
+		LOGI("Not running in a ramdisk, skipping cleanup.");
+		return;
+	}
+
+	const std::string ramdisks[] = { "/dev/ram0", "/dev/initrd" };
+
+	for (const auto &ramdisk : ramdisks) {
+		if (umount(ramdisk.c_str()) == 0) {
+			LOGI("Unmounted %s", ramdisk.c_str());
+		} else {
+			LOGE("Failed to unmount %s: %s", ramdisk.c_str(),
+			     strerror(errno));
+		}
+
+		if (unlink(ramdisk.c_str()) == 0) {
+			LOGI("Removed %s", ramdisk.c_str());
+		} else {
+			LOGE("Failed to remove %s: %s", ramdisk.c_str(),
+			     strerror(errno));
+		}
 	}
 }
 
@@ -96,7 +143,7 @@ bool IsNormalBootForced()
 	return GetProperty("ro.bootmode") == "normal";
 }
 
-const bool ktestingflag = true; 
+const bool ktestingflag = true;
 
 int LoadKernelModule(const std::string &module_path)
 {
