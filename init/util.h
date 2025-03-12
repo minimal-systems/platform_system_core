@@ -34,6 +34,11 @@ void InitKernelLogging(char** argv);
 // reboot_utils.h
 inline void SetFatalRebootTarget(
     const std::optional<std::string>& = std::nullopt) {}
+std::string ExtractRootUUID(const std::string& cmdline);
+// Normalizes paths, replacing absolute "/" with "./".
+std::string NormalizePath(const std::string& path);
+// Joins a directory path with a file name, ensuring proper formatting.
+std::string JoinPath(const std::string& dir, const std::string& file);
 }  // namespace init
 }  // namespace minimal_systems
 

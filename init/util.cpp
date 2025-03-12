@@ -14,6 +14,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <string>
+#include <regex>
 
 #include "log_new.h"
 
@@ -119,6 +120,56 @@ void InitKernelLogging(char** argv) {
   // TODO: Implement or clarify SetFatalRebootTarget() behavior.
   SetFatalRebootTarget();
   LOGI("Kernel logging initialized successfully.");
+}
+
+std::string ExtractRootUUID(const std::string& cmdline) {
+
+ std::smatch match;
+
+ if (std::regex_search(cmdline, match,
+
+                       std::regex(R"(root=UUID=([a-fA-F0-9-]+))"))) {
+
+   return match[1];
+
+ }
+
+ return "";
+
+}
+
+std::string NormalizePath(const std::string& path) {
+    if (path.empty()) {
+        return "./";
+    }
+
+    std::string normalized = path;
+
+    // Ensure the path starts with "./" if it was absolute.
+    if (normalized[0] == '/') {
+        normalized[0] = '.';
+    }
+
+    // Remove trailing slash if present.
+    if (normalized.length() > 1 && normalized.back() == '/') {
+        normalized.pop_back();
+    }
+
+    return normalized;
+}
+
+std::string JoinPath(const std::string& dir, const std::string& file) {
+    if (dir.empty()) {
+        return NormalizePath(file);
+    }
+
+    std::string normalized_dir = NormalizePath(dir);
+
+    if (normalized_dir.back() != '/') {
+        return normalized_dir + "/" + file;
+    }
+
+    return normalized_dir + file;
 }
 
 }  // namespace init
