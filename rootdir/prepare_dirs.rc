@@ -1,51 +1,45 @@
-# Android init.rc for setting up /home directory
+# Android init.rc for setting up /home/${ro.boot.user} directory with XDG environment variables
+
+on early-init
+    # Set XDG Base Directory environment variables
+    export XDG_CONFIG_HOME /home/${ro.boot.user}/.config
+    export XDG_DATA_HOME /home/${ro.boot.user}/.local/share
+    export XDG_CACHE_HOME /home/${ro.boot.user}/.cache
+    export XDG_RUNTIME_DIR /run/user/${ro.boot.user}
+    export XDG_DESKTOP_DIR /home/${ro.boot.user}/Desktop
+    export XDG_DOCUMENTS_DIR /home/${ro.boot.user}/Documents
+    export XDG_DOWNLOAD_DIR /home/${ro.boot.user}/Downloads
+    export XDG_MUSIC_DIR /home/${ro.boot.user}/Music
+    export XDG_PICTURES_DIR /home/${ro.boot.user}/Pictures
+    export XDG_PUBLICSHARE_DIR /home/${ro.boot.user}/Public
+    export XDG_TEMPLATES_DIR /home/${ro.boot.user}/Templates
+    export XDG_VIDEOS_DIR /home/${ro.boot.user}/Videos
 
 on init
     # Base directory
-    mkdir /home 0700 kjones kjones
-    chmod 0700 /home
-    chown kjones:kjones /home
+    mkdir /home/${ro.boot.user} 0700 ${ro.boot.user} ${ro.boot.user}
+    chmod 0700 /home/${ro.boot.user}
+    chown ${ro.boot.user}:${ro.boot.user} /home/${ro.boot.user}
 
     # Subdirectories
-    mkdir /home/.android 0700 kjones kjones
-    mkdir /home/bin 0755 kjones kjones
-    mkdir /home/.cache 0700 kjones kjones
-    mkdir /home/.cargo 0700 kjones kjones
-    mkdir /home/.config 0700 kjones kjones
-    mkdir /home/Desktop 0700 kjones kjones
-    mkdir /home/Documents 0755 kjones kjones
-    mkdir /home/Downloads 0755 kjones kjones
-    mkdir /home/.gnupg 0700 kjones kjones
-    mkdir /home/.gnupg.backup 0700 kjones kjones
-    mkdir /home/.gradle 0700 kjones kjones
-    mkdir /home/Music 0755 kjones kjones
-    mkdir /home/Pictures 0755 kjones kjones
-    mkdir /home/Public 0755 kjones kjones
-    mkdir /home/Templates 0755 kjones kjones
-    mkdir /home/Videos 0755 kjones kjones
+    mkdir /home/${ro.boot.user}/Desktop 0700 ${ro.boot.user} ${ro.boot.user}
+    mkdir /home/${ro.boot.user}/Documents 0755 ${ro.boot.user} ${ro.boot.user}
+    mkdir /home/${ro.boot.user}/Downloads 0755 ${ro.boot.user} ${ro.boot.user}
+    mkdir /home/${ro.boot.user}/Music 0755 ${ro.boot.user} ${ro.boot.user}
+    mkdir /home/${ro.boot.user}/Pictures 0755 ${ro.boot.user} ${ro.boot.user}
+    mkdir /home/${ro.boot.user}/Public 0755 ${ro.boot.user} ${ro.boot.user}
+    mkdir /home/${ro.boot.user}/Templates 0755 ${ro.boot.user} ${ro.boot.user}
+    mkdir /home/${ro.boot.user}/Videos 0755 ${ro.boot.user} ${ro.boot.user}
+    mkdir /home/${ro.boot.user}/.config 0700 ${ro.boot.user} ${ro.boot.user}
+    mkdir /home/${ro.boot.user}/.local/share 0700 ${ro.boot.user} ${ro.boot.user}
+    mkdir /run/user/${ro.boot.user} 0700 ${ro.boot.user} ${ro.boot.user}
 
-    # Sample hidden files
-    write /home/.bash_history ""
-    chmod 0600 /home/.bash_history
-    write /home/.bash_logout "# Logout script"
-    chmod 0644 /home/.bash_logout
-    write /home/.bash_profile "# Profile settings"
-    chmod 0644 /home/.bash_profile
-    write /home/.bashrc "# Bash RC file"
-    chmod 0644 /home/.bashrc
-    write /home/.gitconfig "# Git configuration"
-    chmod 0755 /home/.gitconfig
+    # Essential hidden files
+    write /home/${ro.boot.user}/.bashrc "# Bash runtime configuration\n"
+    chmod 0644 /home/${ro.boot.user}/.bashrc
 
-    # Log file
-    write /home/logcat.log ""
-    chmod 0644 /home/logcat.log
+    write /home/${ro.boot.user}/.profile "# Environment variables and startup scripts\n"
+    chmod 0644 /home/${ro.boot.user}/.profile
 
-    # Optional configurations for tools
-    mkdir /home/.vscode 0755 kjones kjones
-    mkdir /home/.oh-my-zsh 0755 kjones kjones
-    write /home/.zshrc "# ZSH configuration"
-    chmod 0644 /home/.zshrc
-
-    # Symlink examples
-    symlink /home/Downloads /home/latest_download
-    symlink /home/Documents /home/recent_docs
+    write /home/${ro.boot.user}/.bash_logout "# Commands to execute on logout\n"
+    chmod 0644 /home/${ro.boot.user}/.bash_logout

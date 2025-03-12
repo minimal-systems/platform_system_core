@@ -23,8 +23,8 @@ extern "C" {
 /*
  * log_id_t helpers
  */
-log_id_t linux_name_to_log_id(const char* logName);
-const char* linux_log_id_to_name(log_id_t log_id);
+log_id_t linux_name_to_log_id(const char *logName);
+const char *linux_log_id_to_name(log_id_t log_id);
 
 #ifdef __cplusplus
 }

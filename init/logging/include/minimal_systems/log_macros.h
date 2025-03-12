@@ -22,8 +22,8 @@
 
 __BEGIN_DECLS
 
-int __linux_log_print(int prio, const char* tag, const char* fmt, ...)
-    __attribute__((__format__(printf, 3, 4)));
+int __linux_log_print(int prio, const char *tag, const char *fmt, ...)
+	__attribute__((__format__(printf, 3, 4)));
 
 /*
  * #define LOG_TAG before including this header to control the log tag used by
@@ -33,15 +33,20 @@ int __linux_log_print(int prio, const char* tag, const char* fmt, ...)
 #define LOG_TAG NULL
 #endif
 
-#define LOGE(fmt, ...) \
-  ((void)__linux_log_print(LINUX_LOG_ERROR, (LOG_TAG), (fmt)__VA_OPT__(, ) __VA_ARGS__))
-#define LOGW(fmt, ...) \
-  ((void)__linux_log_print(LINUX_LOG_WARN, (LOG_TAG), (fmt)__VA_OPT__(, ) __VA_ARGS__))
-#define LOGI(fmt, ...) \
-  ((void)__linux_log_print(LINUX_LOG_INFO, (LOG_TAG), (fmt)__VA_OPT__(, ) __VA_ARGS__))
-#define LOGD(fmt, ...) \
-  ((void)__linux_log_print(LINUX_LOG_DEBUG, (LOG_TAG), (fmt)__VA_OPT__(, ) __VA_ARGS__))
-#define LOGV(fmt, ...) \
-  ((void)__linux_log_print(LINUX_LOG_VERBOSE, (LOG_TAG), (fmt)__VA_OPT__(, ) __VA_ARGS__))
+#define LOGE(fmt, ...)                                                         \
+	((void)__linux_log_print(LINUX_LOG_ERROR, (LOG_TAG),                   \
+				 (fmt)__VA_OPT__(, ) __VA_ARGS__))
+#define LOGW(fmt, ...)                                                         \
+	((void)__linux_log_print(LINUX_LOG_WARN, (LOG_TAG),                    \
+				 (fmt)__VA_OPT__(, ) __VA_ARGS__))
+#define LOGI(fmt, ...)                                                         \
+	((void)__linux_log_print(LINUX_LOG_INFO, (LOG_TAG),                    \
+				 (fmt)__VA_OPT__(, ) __VA_ARGS__))
+#define LOGD(fmt, ...)                                                         \
+	((void)__linux_log_print(LINUX_LOG_DEBUG, (LOG_TAG),                   \
+				 (fmt)__VA_OPT__(, ) __VA_ARGS__))
+#define LOGV(fmt, ...)                                                         \
+	((void)__linux_log_print(LINUX_LOG_VERBOSE, (LOG_TAG),                 \
+				 (fmt)__VA_OPT__(, ) __VA_ARGS__))
 
 __END_DECLS

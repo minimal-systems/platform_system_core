@@ -44,16 +44,16 @@
  * Simplified macro to send a verbose radio log message using current LOG_TAG.
  */
 #ifndef RLOGV
-#define __RLOGV(...)                                                         \
-  ((void)linux_log_buf_print(LOG_ID_RADIO, LINUX_LOG_VERBOSE, LOG_TAG,       \
-                             __VA_ARGS__))
+#define __RLOGV(...)                                                           \
+	((void)linux_log_buf_print(LOG_ID_RADIO, LINUX_LOG_VERBOSE, LOG_TAG,   \
+				   __VA_ARGS__))
 #if LOG_NDEBUG
-#define RLOGV(...)          \
-  do {                      \
-    if (0) {                \
-      __RLOGV(__VA_ARGS__); \
-    }                       \
-  } while (0)
+#define RLOGV(...)                                                             \
+	do {                                                                   \
+		if (0) {                                                       \
+			__RLOGV(__VA_ARGS__);                                  \
+		}                                                              \
+	} while (0)
 #else
 #define RLOGV(...) __RLOGV(__VA_ARGS__)
 #endif
@@ -63,11 +63,11 @@
 #if LOG_NDEBUG
 #define RLOGV_IF(cond, ...) ((void)0)
 #else
-#define RLOGV_IF(cond, ...)                                                \
-  ((__predict_false(cond))                                                 \
-       ? ((void)linux_log_buf_print(LOG_ID_RADIO, LINUX_LOG_VERBOSE,       \
-                                    LOG_TAG, __VA_ARGS__))                 \
-       : (void)0)
+#define RLOGV_IF(cond, ...)                                                    \
+	((__predict_false(cond)) ?                                             \
+		 ((void)linux_log_buf_print(LOG_ID_RADIO, LINUX_LOG_VERBOSE,   \
+					    LOG_TAG, __VA_ARGS__)) :           \
+		 (void)0)
 #endif
 #endif
 
@@ -75,66 +75,66 @@
  * Simplified macro to send a debug radio log message using current LOG_TAG.
  */
 #ifndef RLOGD
-#define RLOGD(...)                                                         \
-  ((void)linux_log_buf_print(LOG_ID_RADIO, LINUX_LOG_DEBUG, LOG_TAG,       \
-                             __VA_ARGS__))
+#define RLOGD(...)                                                             \
+	((void)linux_log_buf_print(LOG_ID_RADIO, LINUX_LOG_DEBUG, LOG_TAG,     \
+				   __VA_ARGS__))
 #endif
 
 #ifndef RLOGD_IF
-#define RLOGD_IF(cond, ...)                                              \
-  ((__predict_false(cond))                                               \
-       ? ((void)linux_log_buf_print(LOG_ID_RADIO, LINUX_LOG_DEBUG,       \
-                                    LOG_TAG, __VA_ARGS__))               \
-       : (void)0)
+#define RLOGD_IF(cond, ...)                                                    \
+	((__predict_false(cond)) ?                                             \
+		 ((void)linux_log_buf_print(LOG_ID_RADIO, LINUX_LOG_DEBUG,     \
+					    LOG_TAG, __VA_ARGS__)) :           \
+		 (void)0)
 #endif
 
 /*
  * Simplified macro to send an info radio log message using current LOG_TAG.
  */
 #ifndef RLOGI
-#define RLOGI(...)                                                        \
-  ((void)linux_log_buf_print(LOG_ID_RADIO, LINUX_LOG_INFO, LOG_TAG,       \
-                             __VA_ARGS__))
+#define RLOGI(...)                                                             \
+	((void)linux_log_buf_print(LOG_ID_RADIO, LINUX_LOG_INFO, LOG_TAG,      \
+				   __VA_ARGS__))
 #endif
 
 #ifndef RLOGI_IF
-#define RLOGI_IF(cond, ...)                                             \
-  ((__predict_false(cond))                                              \
-       ? ((void)linux_log_buf_print(LOG_ID_RADIO, LINUX_LOG_INFO,       \
-                                    LOG_TAG, __VA_ARGS__))              \
-       : (void)0)
+#define RLOGI_IF(cond, ...)                                                    \
+	((__predict_false(cond)) ?                                             \
+		 ((void)linux_log_buf_print(LOG_ID_RADIO, LINUX_LOG_INFO,      \
+					    LOG_TAG, __VA_ARGS__)) :           \
+		 (void)0)
 #endif
 
 /*
  * Simplified macro to send a warning radio log message using current LOG_TAG.
  */
 #ifndef RLOGW
-#define RLOGW(...)                                                        \
-  ((void)linux_log_buf_print(LOG_ID_RADIO, LINUX_LOG_WARN, LOG_TAG,       \
-                             __VA_ARGS__))
+#define RLOGW(...)                                                             \
+	((void)linux_log_buf_print(LOG_ID_RADIO, LINUX_LOG_WARN, LOG_TAG,      \
+				   __VA_ARGS__))
 #endif
 
 #ifndef RLOGW_IF
-#define RLOGW_IF(cond, ...)                                             \
-  ((__predict_false(cond))                                              \
-       ? ((void)linux_log_buf_print(LOG_ID_RADIO, LINUX_LOG_WARN,       \
-                                    LOG_TAG, __VA_ARGS__))              \
-       : (void)0)
+#define RLOGW_IF(cond, ...)                                                    \
+	((__predict_false(cond)) ?                                             \
+		 ((void)linux_log_buf_print(LOG_ID_RADIO, LINUX_LOG_WARN,      \
+					    LOG_TAG, __VA_ARGS__)) :           \
+		 (void)0)
 #endif
 
 /*
  * Simplified macro to send an error radio log message using current LOG_TAG.
  */
 #ifndef RLOGE
-#define RLOGE(...)                                                         \
-  ((void)linux_log_buf_print(LOG_ID_RADIO, LINUX_LOG_ERROR, LOG_TAG,       \
-                             __VA_ARGS__))
+#define RLOGE(...)                                                             \
+	((void)linux_log_buf_print(LOG_ID_RADIO, LINUX_LOG_ERROR, LOG_TAG,     \
+				   __VA_ARGS__))
 #endif
 
 #ifndef RLOGE_IF
-#define RLOGE_IF(cond, ...)                                              \
-  ((__predict_false(cond))                                               \
-       ? ((void)linux_log_buf_print(LOG_ID_RADIO, LINUX_LOG_ERROR,       \
-                                    LOG_TAG, __VA_ARGS__))               \
-       : (void)0)
+#define RLOGE_IF(cond, ...)                                                    \
+	((__predict_false(cond)) ?                                             \
+		 ((void)linux_log_buf_print(LOG_ID_RADIO, LINUX_LOG_ERROR,     \
+					    LOG_TAG, __VA_ARGS__)) :           \
+		 (void)0)
 #endif

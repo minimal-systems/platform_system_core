@@ -33,14 +33,14 @@ extern "C" {
  */
 
 struct logger_entry {
-  uint16_t len;      /* length of the payload */
-  uint16_t hdr_size; /* sizeof(struct logger_entry) */
-  int32_t pid;       /* generating process's pid */
-  uint32_t tid;      /* generating process's tid */
-  uint32_t sec;      /* seconds since Epoch */
-  uint32_t nsec;     /* nanoseconds */
-  uint32_t lid;      /* log id of the payload, bottom 4 bits currently */
-  uint32_t uid;      /* generating process's uid */
+	uint16_t len; /* length of the payload */
+	uint16_t hdr_size; /* sizeof(struct logger_entry) */
+	int32_t pid; /* generating process's pid */
+	uint32_t tid; /* generating process's tid */
+	uint32_t sec; /* seconds since Epoch */
+	uint32_t nsec; /* nanoseconds */
+	uint32_t lid; /* log id of the payload, bottom 4 bits currently */
+	uint32_t uid; /* generating process's uid */
 };
 
 /*
@@ -49,72 +49,80 @@ struct logger_entry {
 #define LOGGER_ENTRY_MAX_LEN (5 * 1024)
 
 struct log_msg {
-  union {
-    unsigned char buf[LOGGER_ENTRY_MAX_LEN + 1];
-    struct logger_entry entry;
-  } __attribute__((aligned(4)));
+	union {
+		unsigned char buf[LOGGER_ENTRY_MAX_LEN + 1];
+		struct logger_entry entry;
+	} __attribute__((aligned(4)));
 #ifdef __cplusplus
-  uint64_t nsec() const {
-    return static_cast<uint64_t>(entry.sec) * NS_PER_SEC + entry.nsec;
-  }
-  log_id_t id() {
-    return static_cast<log_id_t>(entry.lid);
-  }
-  char* msg() {
-    unsigned short hdr_size = entry.hdr_size;
-    if (hdr_size >= sizeof(struct log_msg) - sizeof(entry)) {
-      return nullptr;
-    }
-    return reinterpret_cast<char*>(buf) + hdr_size;
-  }
-  unsigned int len() { return entry.hdr_size + entry.len; }
+	uint64_t nsec() const
+	{
+		return static_cast<uint64_t>(entry.sec) * NS_PER_SEC +
+		       entry.nsec;
+	}
+	log_id_t id()
+	{
+		return static_cast<log_id_t>(entry.lid);
+	}
+	char *msg()
+	{
+		unsigned short hdr_size = entry.hdr_size;
+		if (hdr_size >= sizeof(struct log_msg) - sizeof(entry)) {
+			return nullptr;
+		}
+		return reinterpret_cast<char *>(buf) + hdr_size;
+	}
+	unsigned int len()
+	{
+		return entry.hdr_size + entry.len;
+	}
 #endif
 };
 
 struct logger;
 
-log_id_t linux_logger_get_id(struct logger* logger);
+log_id_t linux_logger_get_id(struct logger *logger);
 
 /* Clears the given log buffer. */
-int linux_logger_clear(struct logger* logger);
+int linux_logger_clear(struct logger *logger);
 /* Return the allotted size for the given log buffer. */
-long linux_logger_get_log_size(struct logger* logger);
+long linux_logger_get_log_size(struct logger *logger);
 /* Set the allotted size for the given log buffer. */
-int linux_logger_set_log_size(struct logger* logger, unsigned long size);
+int linux_logger_set_log_size(struct logger *logger, unsigned long size);
 /* Return the actual, uncompressed size that can be read from the given log buffer. */
-long linux_logger_get_log_readable_size(struct logger* logger);
+long linux_logger_get_log_readable_size(struct logger *logger);
 /* Return the actual, compressed size that the given log buffer is consuming. */
-long linux_logger_get_log_consumed_size(struct logger* logger);
+long linux_logger_get_log_consumed_size(struct logger *logger);
 /* Deprecated.  Always returns '4' regardless of input. */
-int linux_logger_get_log_version(struct logger* logger);
+int linux_logger_get_log_version(struct logger *logger);
 
 struct logger_list;
 
-ssize_t linux_logger_get_statistics(struct logger_list* logger_list,
-                                    char* buf, size_t len);
-ssize_t linux_logger_get_prune_list(struct logger_list* logger_list,
-                                    char* buf, size_t len);
-int linux_logger_set_prune_list(struct logger_list* logger_list, const char* buf, size_t len);
+ssize_t linux_logger_get_statistics(struct logger_list *logger_list, char *buf,
+				    size_t len);
+ssize_t linux_logger_get_prune_list(struct logger_list *logger_list, char *buf,
+				    size_t len);
+int linux_logger_set_prune_list(struct logger_list *logger_list,
+				const char *buf, size_t len);
 
 /* The below values are used for the `mode` argument of the below functions. */
 #define LINUX_LOG_NONBLOCK 0x00000800
 #define LINUX_LOG_WRAP 0x40000000 /* Block until buffer about to wrap */
 #define LINUX_LOG_PSTORE 0x80000000
 
-struct logger_list* linux_logger_list_alloc(int mode, unsigned int tail,
-                                            pid_t pid);
-struct logger_list* linux_logger_list_alloc_time(int mode, log_time start,
-                                                 pid_t pid);
-void linux_logger_list_free(struct logger_list* logger_list);
+struct logger_list *linux_logger_list_alloc(int mode, unsigned int tail,
+					    pid_t pid);
+struct logger_list *linux_logger_list_alloc_time(int mode, log_time start,
+						 pid_t pid);
+void linux_logger_list_free(struct logger_list *logger_list);
 /* In the purest sense, the following two are orthogonal interfaces */
-int linux_logger_list_read(struct logger_list* logger_list,
-                           struct log_msg* log_msg);
+int linux_logger_list_read(struct logger_list *logger_list,
+			   struct log_msg *log_msg);
 
 /* Multiple log_id_t opens */
-struct logger* linux_logger_open(struct logger_list* logger_list, log_id_t id);
+struct logger *linux_logger_open(struct logger_list *logger_list, log_id_t id);
 /* Single log_id_t open */
-struct logger_list* linux_logger_list_open(log_id_t id, int mode,
-                                           unsigned int tail, pid_t pid);
+struct logger_list *linux_logger_list_open(log_id_t id, int mode,
+					   unsigned int tail, pid_t pid);
 #define linux_logger_list_close linux_logger_list_free
 
 #ifdef __cplusplus
