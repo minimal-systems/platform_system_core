@@ -5,7 +5,7 @@
 #include <log/log.h>
 #include <log/log_read.h>
 #include <log/logprint.h>
-#include <logging/list.h>
+#include "logging/list.h"
 #include <private/linux_logger.h>
 
 #include <cctype>

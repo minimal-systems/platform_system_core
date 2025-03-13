@@ -13,7 +13,7 @@
 extern "C" {
 #endif
 
-#include <logging/logging.h>
+#include "logging/logging.h"
 
 // Core logging function with enforced newlines
 #define LOG_PRINT(priority, tag, fmt, ...)                                     \

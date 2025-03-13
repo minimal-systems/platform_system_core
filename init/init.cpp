@@ -90,8 +90,6 @@ int main(int argc, char **argv)
 		for (const auto &[key, value] : sortedProperties) {
 			LOGI("  %s = %s", key.c_str(), value.c_str());
 		}
-
-		LOGI("Initialization completed successfully.");
 		return EXIT_SUCCESS;
 
 	} catch (const std::exception &ex) {

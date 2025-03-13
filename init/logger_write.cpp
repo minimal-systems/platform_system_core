@@ -6,6 +6,8 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <fcntl.h>
+#include <errno.h>
 
 #define LOG_BUF_SIZE 1024
 
@@ -17,6 +19,9 @@
 #define LINUX_COLOR_GREEN 32
 #define LINUX_COLOR_RED 31
 #define LINUX_COLOR_YELLOW 33
+#define KMSG_PATH "/dev/kmsg"
+
+static bool kernel_logging_enabled = true;
 
 static char priorityToChar(int prio)
 {
@@ -72,6 +77,51 @@ static void formatTimestamp(char *buffer, size_t bufferSize)
 		 ts.tv_nsec / 1000000);
 }
 
+// Log to kernel message buffer
+static void log_to_kernel(int prio, const char *message)
+{
+	// If kernel logging is disabled due to a previous failure, return early
+	if (!kernel_logging_enabled) {
+		return;
+	}
+
+	int fd = open(KMSG_PATH, O_WRONLY | O_APPEND);
+	if (fd < 0) {
+		if (errno == EACCES) {
+			// Disable kernel logging to prevent spam
+			kernel_logging_enabled = false;
+		}
+		perror("Failed to open /dev/kmsg");
+		return;
+	}
+
+	// Kernel priority levels (0 - emergency, 7 - debug)
+	int kernel_prio;
+	switch (prio) {
+	case 2: kernel_prio = 7; break; // Verbose -> Debug
+	case 3: kernel_prio = 6; break; // Debug -> Info
+	case 4: kernel_prio = 5; break; // Info -> Notice
+	case 5: kernel_prio = 4; break; // Warn -> Warning
+	case 6: kernel_prio = 3; break; // Error -> Error
+	case 7: kernel_prio = 2; break; // Fatal -> Critical
+	default: kernel_prio = 5; break; // Default to Notice
+	}
+
+	// Ensure no trailing newline before writing
+	size_t len = strlen(message);
+	char msg_clean[LOG_BUF_SIZE];
+
+	if (len > 0 && message[len - 1] == '\n') {
+		snprintf(msg_clean, sizeof(msg_clean), "Init: %.*s", (int)(len - 1), message);
+	} else {
+		snprintf(msg_clean, sizeof(msg_clean), "Init: %s", message);
+	}
+
+	// Write formatted message to /dev/kmsg
+	dprintf(fd, "<%d>%s", kernel_prio, msg_clean);
+	close(fd);
+}
+
 int __linux_log_print(int prio, const char *tag, const char *fmt, ...)
 {
 	va_list args;
@@ -117,6 +167,12 @@ int __linux_log_print(int prio, const char *tag, const char *fmt, ...)
 	fprintf(stderr, "\033[0;%dm%s %-8s %-8d %-8u %c %s\033[0m", color,
 		timestamp, tag ? tag : "default", getpid(), uid, prioChar,
 		buffer);
+
+	// If the log priority is WARN or higher (>=5), log to the kernel
+	if (prio >= 5) {
+		log_to_kernel(prio, buffer);
+	}
+
 
 	return 1; // Return success
 }

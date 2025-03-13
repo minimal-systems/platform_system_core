@@ -1,2 +1,0 @@
-mkdir -p $TARGET_PRODUCT_OUT/obj/ETC/bootloader_patch_indeterminates
-

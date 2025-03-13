@@ -313,7 +313,7 @@ BootMode GetBootMode()
 
 int FirstStageMain(int argc, char **argv)
 {
-	std::string cmdline = ReadFirstLine("/proc/cmdline");
+	std::string cmdline = ReadFirstLine(NormalizePath("/proc/cmdline"));
 	if (cmdline.empty()) {
 		cmdline = ReadFirstLine("./proc/cmdline");
 	}
@@ -327,7 +327,6 @@ int FirstStageMain(int argc, char **argv)
 
 	DetectAndSetGPUType();
 	FreeRamdisk();
-
 	return 0;
 }
 

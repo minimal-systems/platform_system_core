@@ -1,63 +1,51 @@
 #ifndef PROPERTY_MANAGER_H
 #define PROPERTY_MANAGER_H
 
-#include <mutex>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
+#include <mutex>
 
 namespace minimal_systems
 {
 namespace init
 {
 
-class PropertyManager {
-    public:
-	// Access the singleton instance
-	static PropertyManager &instance();
+class PropertyManager
+{
+public:
+    static PropertyManager &instance();
 
-	// Load properties from a file into memory
-	void loadProperties(const std::string &propertyFile);
+    void loadProperties(const std::string &propertyFile);
+    void saveProperties(const std::string &propertyFile) const;
+    void syncToFile(const std::string &propertyFile);
 
-	// Save in-memory properties to a file
-	void saveProperties(const std::string &propertyFile) const;
+    void loadPersistentProperties(const std::string &persistentFile);
+    void savePersistentProperties(const std::string &persistentFile) const;
+    void syncPersistentProperties(const std::string &persistentFile);
 
-	// Get a property value with a default fallback
-	std::string get(const std::string &key,
-			const std::string &defaultValue) const;
+    std::string get(const std::string &key, const std::string &defaultValue = "") const;
+    void set(const std::string &key, const std::string &value);
+    void markPersistent(const std::string &key);
+    void resetprop(const std::string &key); // New resetprop method
 
-	// Set a property value in memory
-	void set(const std::string &key, const std::string &value);
+    std::string getprop(const std::string &key) const;
+    void setprop(const std::string &key, const std::string &value);
 
-	// Retrieve all properties stored in memory
-	const std::unordered_map<std::string, std::string> &
-	getAllProperties() const;
+    const std::unordered_map<std::string, std::string> &getAllProperties() const;
 
-	// Synchronize in-memory properties to a file
-	void syncToFile(const std::string &propertyFile);
+private:
+    PropertyManager() = default;
 
-	// Simplified property accessors (setprop/getprop)
-	void setprop(const std::string &key, const std::string &value);
-	std::string getprop(const std::string &key) const;
-
-    private:
-	// Mutex for thread-safe property access
-	mutable std::mutex property_mutex;
-
-	// In-memory property storage
-	std::unordered_map<std::string, std::string> properties;
-
-	// Private constructor/destructor for singleton
-	PropertyManager() = default;
-	~PropertyManager() = default;
-
-	// Prevent copy and assignment
-	PropertyManager(const PropertyManager &) = delete;
-	PropertyManager &operator=(const PropertyManager &) = delete;
+    mutable std::mutex property_mutex;
+    std::unordered_map<std::string, std::string> properties;
+    std::unordered_map<std::string, std::string> persistentProperties;
+    std::unordered_set<std::string> persistentKeys;
 };
 
-// Global free functions for simplified property access
-void setprop(const std::string &key, const std::string &value);
 std::string getprop(const std::string &key);
+void setprop(const std::string &key, const std::string &value);
+void resetprop(const std::string &key); // Global resetprop function
 
 } // namespace init
 } // namespace minimal_systems
