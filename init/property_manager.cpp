@@ -86,7 +86,7 @@ void PropertyManager::resetprop(const std::string &key)
 
     if (persistentProperties.erase(key)) {
         persistentKeys.erase(key);
-        syncPersistentProperties("/data/property_persist.conf");
+        syncPersistentProperties("./mnt/cache/property_persist.conf");
         DEBUG_LOGI("Persistent property reset (removed and synced): %s", key.c_str());
     }
 }
@@ -190,6 +190,19 @@ void resetprop(const std::string &key)
 {
     PropertyManager::instance().resetprop(key);
 }
+
+const std::unordered_map<std::string, std::string>& PropertyManager::getAllProperties() const {
+    return properties;
+}
+
+std::string PropertyManager::getprop(const std::string &key) const {
+    return get(key, "");
+}
+
+void PropertyManager::setprop(const std::string &key, const std::string &value) {
+    set(key, value);
+}
+
 
 } // namespace init
 } // namespace minimal_systems
