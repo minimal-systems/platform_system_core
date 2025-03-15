@@ -51,6 +51,15 @@ std::string GetProperty(const std::string& key);
 bool FileExists(const std::string& path);
 std::string ReadFirstLine(const std::string& path);
 
+// GPU detection
+void DetectAndSetGPUType();
+
+// Read the first line from a file
+std::string ReadFirstLine(const std::string& path);
+
+// Get system property
+std::string GetProperty(const std::string& key);
+
 }  // namespace init
 }  // namespace minimal_systems
 

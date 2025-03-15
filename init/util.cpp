@@ -19,6 +19,7 @@
 #include <string>
 
 #include "log_new.h"
+#include "property_manager.h"
 
 namespace minimal_systems {
 namespace init {
@@ -221,6 +222,44 @@ bool IsRunningInRamdisk() {
 
     LOGI("Root filesystem is not on a ramdisk");
     return false;
+}
+
+std::string GetProperty(const std::string& key) {
+    return getprop(key);
+}
+
+bool FileExists(const std::string& path) {
+    struct stat buffer;
+    return stat(path.c_str(), &buffer) == 0;
+}
+
+std::string ReadFirstLine(const std::string& path) {
+    std::ifstream file(path);
+    if (!file.is_open()) {
+        return "";
+    }
+    std::string line;
+    std::getline(file, line);
+    return line;
+}
+
+void DetectAndSetGPUType() {
+    if (FileExists("/proc/driver/nvidia/version")) {
+        LOGI("GPU: NVIDIA detected");
+        setprop("ro.boot.gpu", "nvidia");
+    } else if (FileExists("/sys/class/drm/card0/device/vendor")) {
+        std::string vendor_id = ReadFirstLine("/sys/class/drm/card0/device/vendor");
+        if (vendor_id == "0x1002") {
+            LOGI("GPU: AMD detected");
+            setprop("ro.boot.gpu", "amd");
+        } else {
+            LOGW("GPU: Unknown vendor");
+            setprop("ro.boot.gpu", "unknown");
+        }
+    } else {
+        LOGW("GPU: None detected");
+        setprop("ro.boot.gpu", "none");
+    }
 }
 
 }  // namespace init
