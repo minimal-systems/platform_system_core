@@ -72,36 +72,6 @@ void DetectAndSetGPUType()
 	}
 }
 
-/**
- * @brief Checks if the system is currently running inside a ramdisk.
- *
- * @return true if running inside a ramdisk, false otherwise.
- */
-bool IsRunningInRamdisk()
-{
-	std::ifstream mounts("/proc/mounts");
-	if (!mounts.is_open()) {
-		LOGE("Failed to open /proc/mounts");
-		return false;
-	}
-
-	std::string line;
-	while (std::getline(mounts, line)) {
-		if (line.find(" / ") != std::string::npos &&
-		    (line.find("tmpfs") != std::string::npos ||
-		     line.find("ramfs") != std::string::npos)) {
-			LOGI("Detected root filesystem is on a ramdisk");
-			return true;
-		}
-	}
-
-	LOGI("Root filesystem is not on a ramdisk");
-	return false;
-}
-
-/**
- * @brief Frees up both the primary and main ramdisks if running in a ramdisk.
- */
 void FreeRamdisk()
 {
 	if (!IsRunningInRamdisk()) {

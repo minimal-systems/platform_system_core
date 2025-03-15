@@ -61,6 +61,9 @@ std::string ExtractRootUUID(const std::string &cmdline);
 std::string NormalizePath(const std::string &path);
 // Joins a directory path with a file name, ensuring proper formatting.
 std::string JoinPath(const std::string &dir, const std::string &file);
+// Checks if the system is currently running inside a ramdisk.
+bool IsRunningInRamdisk();
+
 } // namespace init
 } // namespace minimal_systems
 
