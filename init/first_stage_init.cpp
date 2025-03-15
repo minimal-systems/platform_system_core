@@ -55,6 +55,14 @@ bool ForceNormalBoot(const std::string& cmdline, const std::string& bootconfig) 
            cmdline.find("sysboot.force_normal_boot=1") != std::string::npos;
 }
 
+static void Copy(const char* src, const char* dst) {
+    if (link(src, dst) == 0) {
+        LOGI("hard linked %s to %s", src, dst);
+        return;
+    }
+    LOGE("Failed to hard link %s to %s: %s", src, dst, strerror(errno));
+}
+
 bool IsChargerMode() {
     return GetProperty("ro.bootmode") == "charger";
 }
