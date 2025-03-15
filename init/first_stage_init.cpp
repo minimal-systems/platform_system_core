@@ -50,6 +50,11 @@ void FreeRamdisk() {
     }
 }
 
+bool ForceNormalBoot(const std::string& cmdline, const std::string& bootconfig) {
+    return bootconfig.find("sysboot.force_normal_boot = \"1\"") != std::string::npos ||
+           cmdline.find("sysboot.force_normal_boot=1") != std::string::npos;
+}
+
 bool IsChargerMode() {
     return GetProperty("ro.bootmode") == "charger";
 }
