@@ -57,10 +57,35 @@ bool ForceNormalBoot(const std::string& cmdline, const std::string& bootconfig) 
 
 static void Copy(const char* src, const char* dst) {
     if (link(src, dst) == 0) {
-        LOGI("hard linked %s to %s", src, dst);
+        LOGI("Hard linked %s to %s", src, dst);
         return;
     }
-    LOGE("Failed to hard link %s to %s: %s", src, dst, strerror(errno));
+
+    LOGE("Hard link failed, copying file instead");
+
+    int src_fd = open(src, O_RDONLY);
+    int dst_fd = open(dst, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+    if (src_fd < 0 || dst_fd < 0) {
+        LOGE("File error: %s", strerror(errno));
+        if (src_fd >= 0) close(src_fd);
+        if (dst_fd >= 0) close(dst_fd);
+        return;
+    }
+
+    char buffer[4096];
+    ssize_t bytes;
+    while ((bytes = read(src_fd, buffer, sizeof(buffer))) > 0) {
+        if (write(dst_fd, buffer, bytes) != bytes) {
+            LOGE("Write error: %s", strerror(errno));
+            break;
+        }
+    }
+
+    if (bytes < 0) LOGE("Read error: %s", strerror(errno));
+
+    close(src_fd);
+    close(dst_fd);
+    LOGI("Copied %s to %s", src, dst);
 }
 
 bool IsChargerMode() {
