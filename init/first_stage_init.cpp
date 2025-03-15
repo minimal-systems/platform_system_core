@@ -12,11 +12,16 @@
 #include <regex>
 #include <string>
 #include <vector>
+#include <filesystem>
 
 #include "log_new.h"
 #include "property_manager.h"
 #include "util.h"
 #include "verify.h"
+
+using namespace std::literals;
+
+namespace fs = std::filesystem;
 
 namespace minimal_systems {
 namespace init {
@@ -86,6 +91,27 @@ static void Copy(const char* src, const char* dst) {
     close(src_fd);
     close(dst_fd);
     LOGI("Copied %s to %s", src, dst);
+}
+
+void PrepareSwitchRoot() {
+    static constexpr const char* src_bin = "/init";  // Main init binary
+    static constexpr const char* dst = "/new_root/init";  // Target location
+
+    if (access(dst, X_OK) == 0) {
+        LOGI("%s already exists and is executable", dst);
+        return;
+    }
+
+    std::string dst_dir = fs::path(dst).parent_path();
+    std::error_code ec;
+    if (access(dst_dir.c_str(), F_OK) != 0) {
+        if (!fs::create_directories(dst_dir, ec)) {
+            LOGE("Cannot create %s: %s", dst_dir.c_str(), ec.message().c_str());
+            return;
+        }
+    }
+
+    Copy(src_bin, dst);
 }
 
 bool IsChargerMode() {
