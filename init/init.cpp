@@ -33,6 +33,8 @@ int main(int argc, char **argv)
 	using namespace minimal_systems::init;
 
 	try {
+		system("clear");
+
 		// Initialize the PropertyManager
 		auto &props = PropertyManager::instance();
 		auto &propertyManager = PropertyManager::instance();
