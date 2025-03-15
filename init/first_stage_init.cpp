@@ -26,6 +26,8 @@ namespace fs = std::filesystem;
 namespace minimal_systems {
 namespace init {
 
+namespace {
+
 enum class BootMode {
     NORMAL_MODE,
     RECOVERY_MODE,
@@ -149,6 +151,8 @@ constexpr std::string_view GetPageSizeSuffix(std::string_view dirname) {
     }
     return "";
 }
+
+}  // namespace
 
 BootMode GetBootMode() {
     if (IsChargerMode()) return BootMode::CHARGER_MODE;
