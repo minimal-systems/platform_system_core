@@ -21,7 +21,6 @@
 #include "libbase.h"
 
 using namespace std::literals;
-
 namespace fs = std::filesystem;
 
 namespace minimal_systems {
@@ -136,11 +135,51 @@ std::string GetPageSizeSuffix() {
     return minimal_systems::base::StringPrintf("_%zuk", page_size / 1024);
 }
 
+constexpr bool EndsWith(const std::string_view str, const std::string_view suffix) {
+    return str.size() >= suffix.size() &&
+           0 == str.compare(str.size() - suffix.size(), suffix.size(), suffix);
+}
+
+constexpr std::string_view GetPageSizeSuffix(std::string_view dirname) {
+    if (EndsWith(dirname, "_16k")) {
+        return "_16k";
+    }
+    if (EndsWith(dirname, "_64k")) {
+        return "_64k";
+    }
+    return "";
+}
 
 BootMode GetBootMode() {
     if (IsChargerMode()) return BootMode::CHARGER_MODE;
     if (IsRecoveryMode() && !IsNormalBootForced()) return BootMode::RECOVERY_MODE;
     return BootMode::NORMAL_MODE;
+}
+
+std::string GetModuleLoadList(BootMode boot_mode, const std::string& dir_path) {
+    std::string module_load_file;
+
+    switch (boot_mode) {
+        case BootMode::NORMAL_MODE:
+            module_load_file = "modules.load";
+            break;
+        case BootMode::RECOVERY_MODE:
+            module_load_file = "modules.load.recovery";
+            break;
+        case BootMode::CHARGER_MODE:
+            module_load_file = "modules.load.charger";
+            break;
+    }
+
+    if (module_load_file != "modules.load") {
+        struct stat fileStat {};
+        std::string load_path = dir_path + "/" + module_load_file;
+        if (stat(load_path.c_str(), &fileStat)) {
+            module_load_file = "modules.load";
+        }
+    }
+
+    return module_load_file;
 }
 
 int FirstStageMain(int argc, char** argv) {
