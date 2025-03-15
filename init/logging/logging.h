@@ -7,7 +7,6 @@
 #include <pthread.h>
 #include <unistd.h>
 
-#include <minimal_systems/log.h>
 #include <log/log_id.h>
 #include <log/log_main.h>
 #include <log/log_radio.h>
@@ -15,6 +14,7 @@
 #include <log/log_safetynet.h>
 #include <log/log_system.h>
 #include <log/log_time.h>
+#include <minimal_systems/log.h>
 
 /*
  * LOG_TAG is the local tag used for the following simplified

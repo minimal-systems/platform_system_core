@@ -39,58 +39,58 @@ extern "C" {
 
 /* Header Structure to pstore */
 typedef struct __attribute__((__packed__)) {
-	uint8_t magic;
-	uint16_t len;
-	uint16_t uid;
-	uint16_t pid;
+    uint8_t magic;
+    uint16_t len;
+    uint16_t uid;
+    uint16_t pid;
 } linux_pmsg_log_header_t;
 
 /* Header Structure to logd, and second header for pstore */
 typedef struct __attribute__((__packed__)) {
-	uint8_t id;
-	uint16_t tid;
-	log_time realtime;
+    uint8_t id;
+    uint16_t tid;
+    log_time realtime;
 } linux_log_header_t;
 
 /* Event Header Structure to logd */
 typedef struct __attribute__((__packed__)) {
-	int32_t tag; // Little Endian Order
+    int32_t tag;  // Little Endian Order
 } linux_event_header_t;
 
 // Event payload EVENT_TYPE_LIST
 typedef struct __attribute__((__packed__)) {
-	int8_t type; // EVENT_TYPE_LIST
-	int8_t element_count;
+    int8_t type;  // EVENT_TYPE_LIST
+    int8_t element_count;
 } linux_event_list_t;
 
 // Event payload EVENT_TYPE_FLOAT
 typedef struct __attribute__((__packed__)) {
-	int8_t type; // EVENT_TYPE_FLOAT
-	float data;
+    int8_t type;  // EVENT_TYPE_FLOAT
+    float data;
 } linux_event_float_t;
 
 /* Event payload EVENT_TYPE_INT */
 typedef struct __attribute__((__packed__)) {
-	int8_t type; // EVENT_TYPE_INT
-	int32_t data; // Little Endian Order
+    int8_t type;   // EVENT_TYPE_INT
+    int32_t data;  // Little Endian Order
 } linux_event_int_t;
 
 /* Event with single EVENT_TYPE_INT */
 typedef struct __attribute__((__packed__)) {
-	linux_event_header_t header;
-	linux_event_int_t payload;
+    linux_event_header_t header;
+    linux_event_int_t payload;
 } linux_log_event_int_t;
 
 /* Event payload EVENT_TYPE_LONG */
 typedef struct __attribute__((__packed__)) {
-	int8_t type; // EVENT_TYPE_LONG
-	int64_t data; // Little Endian Order
+    int8_t type;   // EVENT_TYPE_LONG
+    int64_t data;  // Little Endian Order
 } linux_event_long_t;
 
 /* Event with single EVENT_TYPE_LONG */
 typedef struct __attribute__((__packed__)) {
-	linux_event_header_t header;
-	linux_event_long_t payload;
+    linux_event_header_t header;
+    linux_event_long_t payload;
 } linux_log_event_long_t;
 
 /*
@@ -106,44 +106,40 @@ typedef struct __attribute__((__packed__)) {
  */
 
 typedef struct __attribute__((__packed__)) {
-	int8_t type; // EVENT_TYPE_STRING;
-	int32_t length; // Little Endian Order
-	char data[];
+    int8_t type;     // EVENT_TYPE_STRING;
+    int32_t length;  // Little Endian Order
+    char data[];
 } linux_event_string_t;
 
 /* Event with single EVENT_TYPE_STRING */
 typedef struct __attribute__((__packed__)) {
-	linux_event_header_t header;
-	int8_t type; // EVENT_TYPE_STRING;
-	int32_t length; // Little Endian Order
-	char data[];
+    linux_event_header_t header;
+    int8_t type;     // EVENT_TYPE_STRING;
+    int32_t length;  // Little Endian Order
+    char data[];
 } linux_log_event_string_t;
 
 #define LINUX_LOG_PMSG_FILE_MAX_SEQUENCE 256 /* 1MB file */
 #define LINUX_LOG_PMSG_FILE_SEQUENCE 1000
 
-ssize_t __linux_log_pmsg_file_write(log_id_t logId, char prio,
-				    const char *filename, const char *buf,
-				    size_t len);
+ssize_t __linux_log_pmsg_file_write(log_id_t logId, char prio, const char* filename,
+                                    const char* buf, size_t len);
 
 #define LINUX_LOG_ANY LINUX_LOG_UNKNOWN
 
 /* first 5 arguments match __linux_log_msg_file_write, a cast is safe */
-typedef ssize_t (*__linux_log_pmsg_file_read_fn)(log_id_t logId, char prio,
-						 const char *filename,
-						 const char *buf, size_t len,
-						 void *arg);
+typedef ssize_t (*__linux_log_pmsg_file_read_fn)(log_id_t logId, char prio, const char* filename,
+                                                 const char* buf, size_t len, void* arg);
 
-ssize_t __linux_log_pmsg_file_read(log_id_t logId, char prio,
-				   const char *prefix,
-				   __linux_log_pmsg_file_read_fn fn, void *arg);
+ssize_t __linux_log_pmsg_file_read(log_id_t logId, char prio, const char* prefix,
+                                   __linux_log_pmsg_file_read_fn fn, void* arg);
 
-int __linux_log_security_bwrite(int32_t tag, const void *payload, size_t len);
-int __linux_log_security_bswrite(int32_t tag, const char *payload);
+int __linux_log_security_bwrite(int32_t tag, const void* payload, size_t len);
+int __linux_log_security_bswrite(int32_t tag, const char* payload);
 int __linux_log_security(); /* Device Owner is present */
 
 /* Retrieve the composed event buffer */
-int linux_log_write_list_buffer(linux_log_context ctx, const char **msg);
+int linux_log_write_list_buffer(linux_log_context ctx, const char** msg);
 
 #if defined(__cplusplus)
 }

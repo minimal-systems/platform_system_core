@@ -9,14 +9,14 @@
 #include <pwd.h>
 #include <unistd.h>
 
+#include <sys/stat.h>
 #include <cctype>
 #include <cerrno>
 #include <cstdlib>
 #include <cstring>
-#include <string>
-#include <regex>
 #include <fstream>
-#include <sys/stat.h>
+#include <regex>
+#include <string>
 
 #include "log_new.h"
 
@@ -34,7 +34,7 @@ const std::string kDataDirPrefix("/home");
  * @param name Username or numeric UID as a string.
  * @return Result containing the UID on success or an error message on failure.
  */
-Result<uid_t> DecodeUid(const std::string &name) {
+Result<uid_t> DecodeUid(const std::string& name) {
     if (name.empty()) {
         return Result<uid_t>::Failure("Username/UID string is empty.");
     }
@@ -42,23 +42,21 @@ Result<uid_t> DecodeUid(const std::string &name) {
     // Check if the name starts with an alphabet, indicating a username.
     if (std::isalpha(name[0])) {
         errno = 0;
-        passwd *pwd = getpwnam(name.c_str());
+        passwd* pwd = getpwnam(name.c_str());
         if (!pwd) {
             int saved_errno = errno;
-            return Result<uid_t>::Failure(
-                "getpwnam failed: " + std::string(strerror(saved_errno)));
+            return Result<uid_t>::Failure("getpwnam failed: " + std::string(strerror(saved_errno)));
         }
         return Result<uid_t>::Success(pwd->pw_uid);
     }
 
     // If the name is numeric, convert it to UID.
     errno = 0;
-    char *endptr = nullptr;
+    char* endptr = nullptr;
     uid_t result = static_cast<uid_t>(std::strtoul(name.c_str(), &endptr, 0));
     if (errno || endptr == name.c_str() || *endptr != '\0') {
         int saved_errno = errno;
-        return Result<uid_t>::Failure(
-            "strtoul failed: " + std::string(strerror(saved_errno)));
+        return Result<uid_t>::Failure("strtoul failed: " + std::string(strerror(saved_errno)));
     }
 
     return Result<uid_t>::Success(result);
@@ -72,7 +70,7 @@ Result<uid_t> DecodeUid(const std::string &name) {
  *
  * @param argv Command-line arguments (unused, kept for compatibility).
  */
-void SetStdioToDevNull(char **argv) {
+void SetStdioToDevNull(char** argv) {
     int fd_null = open("/dev/null", O_RDWR | O_CLOEXEC);
     if (fd_null == -1) {
         int saved_errno = errno;
@@ -98,8 +96,7 @@ void SetStdioToDevNull(char **argv) {
     }
 
     // Redirect standard output and error to /dev/tty.
-    if (dup2(fd_terminal, STDOUT_FILENO) == -1 ||
-        dup2(fd_terminal, STDERR_FILENO) == -1) {
+    if (dup2(fd_terminal, STDOUT_FILENO) == -1 || dup2(fd_terminal, STDERR_FILENO) == -1) {
         int saved_errno = errno;
         LOGE("Failed to redirect stdout/stderr to /dev/tty: %s", strerror(saved_errno));
         close(fd_null);
@@ -125,7 +122,7 @@ void SetStdioToDevNull(char **argv) {
  *
  * @param argv Command-line arguments (unused, kept for compatibility).
  */
-void InitKernelLogging(char **argv) {
+void InitKernelLogging(char** argv) {
     // TODO: Implement or clarify SetFatalRebootTarget() behavior.
     SetFatalRebootTarget();
     LOGI("Kernel logging initialized successfully.");
@@ -140,7 +137,7 @@ void InitKernelLogging(char **argv) {
  * @param cmdline The kernel command line string.
  * @return Extracted root filesystem UUID or an empty string if not found.
  */
-std::string ExtractRootUUID(const std::string &cmdline) {
+std::string ExtractRootUUID(const std::string& cmdline) {
     std::smatch match;
     if (std::regex_search(cmdline, match, std::regex(R"(root=UUID=([a-fA-F0-9-]+))"))) {
         return match[1];
@@ -157,7 +154,7 @@ std::string ExtractRootUUID(const std::string &cmdline) {
  * @param path The input path to normalize.
  * @return A normalized version of the path.
  */
-std::string NormalizePath(const std::string &path) {
+std::string NormalizePath(const std::string& path) {
     if (path.empty()) {
         return "./";
     }
@@ -187,7 +184,7 @@ std::string NormalizePath(const std::string &path) {
  * @param file The filename.
  * @return A properly formatted path.
  */
-std::string JoinPath(const std::string &dir, const std::string &file) {
+std::string JoinPath(const std::string& dir, const std::string& file) {
     if (dir.empty()) {
         return NormalizePath(file);
     }
@@ -206,26 +203,24 @@ std::string JoinPath(const std::string &dir, const std::string &file) {
  *
  * @return true if running inside a ramdisk, false otherwise.
  */
-bool IsRunningInRamdisk()
-{
-	std::ifstream mounts("/proc/mounts");
-	if (!mounts.is_open()) {
-		LOGE("Failed to open /proc/mounts");
-		return false;
-	}
+bool IsRunningInRamdisk() {
+    std::ifstream mounts("/proc/mounts");
+    if (!mounts.is_open()) {
+        LOGE("Failed to open /proc/mounts");
+        return false;
+    }
 
-	std::string line;
-	while (std::getline(mounts, line)) {
-		if (line.find(" / ") != std::string::npos &&
-		    (line.find("tmpfs") != std::string::npos ||
-		     line.find("ramfs") != std::string::npos)) {
-			LOGI("Detected root filesystem is on a ramdisk");
-			return true;
-		}
-	}
+    std::string line;
+    while (std::getline(mounts, line)) {
+        if (line.find(" / ") != std::string::npos &&
+            (line.find("tmpfs") != std::string::npos || line.find("ramfs") != std::string::npos)) {
+            LOGI("Detected root filesystem is on a ramdisk");
+            return true;
+        }
+    }
 
-	LOGI("Root filesystem is not on a ramdisk");
-	return false;
+    LOGI("Root filesystem is not on a ramdisk");
+    return false;
 }
 
 }  // namespace init

@@ -21,8 +21,8 @@
 #include "log.h"
 
 /* In the future, we would like to make this list extensible */
-static const char *LOG_NAME[LOG_ID_MAX] = {
-	/* clang-format off */
+static const char* LOG_NAME[LOG_ID_MAX] = {
+        /* clang-format off */
   [LOG_ID_MAIN] = "main",
   [LOG_ID_RADIO] = "radio",
   [LOG_ID_EVENTS] = "events",
@@ -31,47 +31,43 @@ static const char *LOG_NAME[LOG_ID_MAX] = {
   [LOG_ID_STATS] = "stats",
   [LOG_ID_SECURITY] = "security",
   [LOG_ID_KERNEL] = "kernel",
-	/* clang-format on */
+        /* clang-format on */
 };
 
-const char *linux_log_id_to_name(log_id_t log_id)
-{
-	if (log_id >= LOG_ID_MAX) {
-		log_id = LOG_ID_MAIN;
-	}
-	return LOG_NAME[log_id];
+const char* linux_log_id_to_name(log_id_t log_id) {
+    if (log_id >= LOG_ID_MAX) {
+        log_id = LOG_ID_MAIN;
+    }
+    return LOG_NAME[log_id];
 }
 
-static_assert(
-	std::is_same<std::underlying_type<log_id_t>::type, uint32_t>::value,
-	"log_id_t must be an uint32_t");
+static_assert(std::is_same<std::underlying_type<log_id_t>::type, uint32_t>::value,
+              "log_id_t must be an uint32_t");
 
-static_assert(std::is_same<std::underlying_type<linux_LogPriority>::type,
-			   uint32_t>::value,
-	      "log_id_t must be an uint32_t");
+static_assert(std::is_same<std::underlying_type<linux_LogPriority>::type, uint32_t>::value,
+              "log_id_t must be an uint32_t");
 
-log_id_t android_name_to_log_id(const char *logName)
-{
-	const char *b;
-	unsigned int ret;
+log_id_t android_name_to_log_id(const char* logName) {
+    const char* b;
+    unsigned int ret;
 
-	if (!logName) {
-		return static_cast<log_id_t>(LOG_ID_MAX);
-	}
+    if (!logName) {
+        return static_cast<log_id_t>(LOG_ID_MAX);
+    }
 
-	b = strrchr(logName, '/');
-	if (!b) {
-		b = logName;
-	} else {
-		++b;
-	}
+    b = strrchr(logName, '/');
+    if (!b) {
+        b = logName;
+    } else {
+        ++b;
+    }
 
-	for (ret = LOG_ID_MIN; ret < LOG_ID_MAX; ++ret) {
-		const char *l = LOG_NAME[ret];
-		if (l && !strcmp(b, l)) {
-			return static_cast<log_id_t>(ret);
-		}
-	}
+    for (ret = LOG_ID_MIN; ret < LOG_ID_MAX; ++ret) {
+        const char* l = LOG_NAME[ret];
+        if (l && !strcmp(b, l)) {
+            return static_cast<log_id_t>(ret);
+        }
+    }
 
-	return static_cast<log_id_t>(LOG_ID_MAX);
+    return static_cast<log_id_t>(LOG_ID_MAX);
 }

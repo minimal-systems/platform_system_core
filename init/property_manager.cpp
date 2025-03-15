@@ -6,10 +6,8 @@
 
 #include "log_new.h"
 
-namespace minimal_systems
-{
-namespace init
-{
+namespace minimal_systems {
+namespace init {
 
 #ifdef DEBUG_PROP
 #define DEBUG_LOGD(...) LOGD(__VA_ARGS__)
@@ -22,15 +20,13 @@ namespace init
 #endif
 
 // Singleton instance
-PropertyManager &PropertyManager::instance()
-{
+PropertyManager& PropertyManager::instance() {
     static PropertyManager instance;
     return instance;
 }
 
 // Load properties from a file
-void PropertyManager::loadProperties(const std::string &propertyFile)
-{
+void PropertyManager::loadProperties(const std::string& propertyFile) {
     std::lock_guard<std::mutex> lock(property_mutex);
     properties.clear();
 
@@ -55,8 +51,7 @@ void PropertyManager::loadProperties(const std::string &propertyFile)
 }
 
 // Save properties to a file
-void PropertyManager::saveProperties(const std::string &propertyFile) const
-{
+void PropertyManager::saveProperties(const std::string& propertyFile) const {
     std::lock_guard<std::mutex> lock(property_mutex);
 
     if (propertyFile.empty()) {
@@ -69,15 +64,14 @@ void PropertyManager::saveProperties(const std::string &propertyFile) const
         return;
     }
 
-    for (const auto &[key, value] : properties) {
+    for (const auto& [key, value] : properties) {
         file << key << "=" << value << "\n";
     }
     DEBUG_LOGI("Properties saved successfully: %s", propertyFile.c_str());
 }
 
 // Reset a property (removes it from memory)
-void PropertyManager::resetprop(const std::string &key)
-{
+void PropertyManager::resetprop(const std::string& key) {
     std::lock_guard<std::mutex> lock(property_mutex);
 
     if (properties.erase(key)) {
@@ -92,8 +86,7 @@ void PropertyManager::resetprop(const std::string &key)
 }
 
 // Load persistent properties
-void PropertyManager::loadPersistentProperties(const std::string &persistentFile)
-{
+void PropertyManager::loadPersistentProperties(const std::string& persistentFile) {
     std::lock_guard<std::mutex> lock(property_mutex);
     persistentProperties.clear();
     persistentKeys.clear();
@@ -120,8 +113,7 @@ void PropertyManager::loadPersistentProperties(const std::string &persistentFile
 }
 
 // Save persistent properties to a file
-void PropertyManager::savePersistentProperties(const std::string &persistentFile) const
-{
+void PropertyManager::savePersistentProperties(const std::string& persistentFile) const {
     std::lock_guard<std::mutex> lock(property_mutex);
 
     if (persistentFile.empty()) {
@@ -130,26 +122,25 @@ void PropertyManager::savePersistentProperties(const std::string &persistentFile
 
     std::ofstream file(persistentFile, std::ios::trunc);
     if (!file) {
-        DEBUG_LOGE("Failed to open persistent property file for writing: %s", persistentFile.c_str());
+        DEBUG_LOGE("Failed to open persistent property file for writing: %s",
+                   persistentFile.c_str());
         return;
     }
 
-    for (const auto &[key, value] : persistentProperties) {
+    for (const auto& [key, value] : persistentProperties) {
         file << key << "=" << value << "\n";
     }
     DEBUG_LOGI("Persistent properties saved successfully.");
 }
 
 // Sync persistent properties to disk
-void PropertyManager::syncPersistentProperties(const std::string &persistentFile)
-{
+void PropertyManager::syncPersistentProperties(const std::string& persistentFile) {
     DEBUG_LOGI("Syncing persistent properties...");
     savePersistentProperties(persistentFile);
 }
 
 // Get a property
-std::string PropertyManager::get(const std::string &key, const std::string &defaultValue) const
-{
+std::string PropertyManager::get(const std::string& key, const std::string& defaultValue) const {
     std::lock_guard<std::mutex> lock(property_mutex);
 
     if (persistentProperties.find(key) != persistentProperties.end()) {
@@ -165,8 +156,7 @@ std::string PropertyManager::get(const std::string &key, const std::string &defa
 }
 
 // Set a property (also updates persistent properties if marked)
-void PropertyManager::set(const std::string &key, const std::string &value)
-{
+void PropertyManager::set(const std::string& key, const std::string& value) {
     std::lock_guard<std::mutex> lock(property_mutex);
 
     properties[key] = value;
@@ -176,18 +166,15 @@ void PropertyManager::set(const std::string &key, const std::string &value)
 }
 
 // Global functions
-std::string getprop(const std::string &key)
-{
+std::string getprop(const std::string& key) {
     return PropertyManager::instance().getprop(key);
 }
 
-void setprop(const std::string &key, const std::string &value)
-{
+void setprop(const std::string& key, const std::string& value) {
     PropertyManager::instance().setprop(key, value);
 }
 
-void resetprop(const std::string &key)
-{
+void resetprop(const std::string& key) {
     PropertyManager::instance().resetprop(key);
 }
 
@@ -195,14 +182,13 @@ const std::unordered_map<std::string, std::string>& PropertyManager::getAllPrope
     return properties;
 }
 
-std::string PropertyManager::getprop(const std::string &key) const {
+std::string PropertyManager::getprop(const std::string& key) const {
     return get(key, "");
 }
 
-void PropertyManager::setprop(const std::string &key, const std::string &value) {
+void PropertyManager::setprop(const std::string& key, const std::string& value) {
     set(key, value);
 }
 
-
-} // namespace init
-} // namespace minimal_systems
+}  // namespace init
+}  // namespace minimal_systems

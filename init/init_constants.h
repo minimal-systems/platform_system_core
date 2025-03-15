@@ -87,4 +87,4 @@ const std::string PROP_RO_HARDWARE_WIFI_LEGACY_HAL = "ro.hardware.wifi.legacy_ha
 const std::string PROP_RO_HARDWARE_WIFI_VENDOR_HAL = "ro.hardware.wifi.vendor_hal";
 const std::string PROP_RO_HARDWARE_WIFI_EXTENDED_HAL = "ro.hardware.wifi.extended_hal";
 
-#endif // INIT_CONSTANTS_H
+#endif  // INIT_CONSTANTS_H

@@ -4,10 +4,8 @@
 #include <string>
 #include <vector>
 
-namespace minimal_systems
-{
-namespace init
-{
+namespace minimal_systems {
+namespace init {
 
 /**
  * @brief Parses initialization files in the specified directory.
@@ -18,7 +16,7 @@ namespace init
  * @param dir_path The path of the directory to parse.
  * @return true if parsing succeeds, false if the directory does not exist.
  */
-bool parse_init_files(const std::string &dir_path);
+bool parse_init_files(const std::string& dir_path);
 
 /**
  * @brief Checks if a file exists.
@@ -28,7 +26,7 @@ bool parse_init_files(const std::string &dir_path);
  * @param filename The path to the file.
  * @return true if the file exists, false otherwise.
  */
-bool file_exists(const std::string &filename);
+bool file_exists(const std::string& filename);
 
 /**
  * @brief Performs recovery-specific initialization.
@@ -51,7 +49,7 @@ bool recovery_init();
  */
 bool parse_init();
 
-} // namespace init
-} // namespace minimal_systems
+}  // namespace init
+}  // namespace minimal_systems
 
-#endif // INIT_PARSER_H
+#endif  // INIT_PARSER_H

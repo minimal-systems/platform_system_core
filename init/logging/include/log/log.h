@@ -25,13 +25,13 @@
 #include <time.h>
 #include <unistd.h>
 
-#include <minimal_systems/log.h>
 #include <log/log_id.h>
 #include <log/log_main.h>
 #include <log/log_radio.h>
 #include <log/log_safetynet.h>
 #include <log/log_system.h>
 #include <log/log_time.h>
+#include <minimal_systems/log.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -78,56 +78,51 @@ extern "C" {
  * The following should not be used directly.
  */
 
-int __linux_log_bwrite(int32_t tag, const void *payload, size_t len);
-int __linux_log_btwrite(int32_t tag, char type, const void *payload,
-			size_t len);
-int __linux_log_bswrite(int32_t tag, const char *payload);
+int __linux_log_bwrite(int32_t tag, const void* payload, size_t len);
+int __linux_log_btwrite(int32_t tag, char type, const void* payload, size_t len);
+int __linux_log_bswrite(int32_t tag, const char* payload);
 
-int __linux_log_stats_bwrite(int32_t tag, const void *payload, size_t len);
+int __linux_log_stats_bwrite(int32_t tag, const void* payload, size_t len);
 
 #define linux_bWriteLog(tag, payload, len) __linux_log_bwrite(tag, payload, len)
-#define linux_btWriteLog(tag, type, payload, len)                              \
-	__linux_log_btwrite(tag, type, payload, len)
+#define linux_btWriteLog(tag, type, payload, len) __linux_log_btwrite(tag, type, payload, len)
 
 /*
  * Event log entry types.
  */
 typedef enum {
-	/* Special markers for android_log_list_element type */
-	EVENT_TYPE_LIST_STOP = '\n', /* declare end of list  */
-	EVENT_TYPE_UNKNOWN = '?', /* protocol error       */
+    /* Special markers for android_log_list_element type */
+    EVENT_TYPE_LIST_STOP = '\n', /* declare end of list  */
+    EVENT_TYPE_UNKNOWN = '?',    /* protocol error       */
 
-	/* must match with declaration in java/android/android/util/EventLog.java */
-	EVENT_TYPE_INT = 0, /* int32_t */
-	EVENT_TYPE_LONG = 1, /* int64_t */
-	EVENT_TYPE_STRING = 2,
-	EVENT_TYPE_LIST = 3,
-	EVENT_TYPE_FLOAT = 4,
+    /* must match with declaration in java/android/android/util/EventLog.java */
+    EVENT_TYPE_INT = 0,  /* int32_t */
+    EVENT_TYPE_LONG = 1, /* int64_t */
+    EVENT_TYPE_STRING = 2,
+    EVENT_TYPE_LIST = 3,
+    EVENT_TYPE_FLOAT = 4,
 } LinuxEventLogType;
 
 #ifndef LOG_EVENT_INT
 #define LOG_EVENT_INT(_tag, _value)                                            \
-	{                                                                      \
-		int intBuf = _value;                                           \
-		(void)linux_btWriteLog(_tag, EVENT_TYPE_INT, &intBuf,          \
-				       sizeof(intBuf));                        \
-	}
+    {                                                                          \
+        int intBuf = _value;                                                   \
+        (void)linux_btWriteLog(_tag, EVENT_TYPE_INT, &intBuf, sizeof(intBuf)); \
+    }
 #endif
 #ifndef LOG_EVENT_LONG
-#define LOG_EVENT_LONG(_tag, _value)                                           \
-	{                                                                      \
-		long long longBuf = _value;                                    \
-		(void)linux_btWriteLog(_tag, EVENT_TYPE_LONG, &longBuf,        \
-				       sizeof(longBuf));                       \
-	}
+#define LOG_EVENT_LONG(_tag, _value)                                              \
+    {                                                                             \
+        long long longBuf = _value;                                               \
+        (void)linux_btWriteLog(_tag, EVENT_TYPE_LONG, &longBuf, sizeof(longBuf)); \
+    }
 #endif
 #ifndef LOG_EVENT_FLOAT
-#define LOG_EVENT_FLOAT(_tag, _value)                                          \
-	{                                                                      \
-		float floatBuf = _value;                                       \
-		(void)linux_btWriteLog(_tag, EVENT_TYPE_FLOAT, &floatBuf,      \
-				       sizeof(floatBuf));                      \
-	}
+#define LOG_EVENT_FLOAT(_tag, _value)                                                \
+    {                                                                                \
+        float floatBuf = _value;                                                     \
+        (void)linux_btWriteLog(_tag, EVENT_TYPE_FLOAT, &floatBuf, sizeof(floatBuf)); \
+    }
 #endif
 #ifndef LOG_EVENT_STRING
 #define LOG_EVENT_STRING(_tag, _value) (void)__linux_log_bswrite(_tag, _value);

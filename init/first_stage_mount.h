@@ -4,10 +4,8 @@
 #include <string>
 #include <vector>
 
-namespace minimal_systems
-{
-namespace init
-{
+namespace minimal_systems {
+namespace init {
 
 /**
  * @brief Loads the appropriate fstab based on the given paths.
@@ -18,7 +16,7 @@ namespace init
  * @param fstab_paths A vector of strings containing possible fstab paths.
  * @return true if a valid fstab file is loaded, false otherwise.
  */
-bool load_fstab(const std::vector<std::string> &fstab_paths);
+bool load_fstab(const std::vector<std::string>& fstab_paths);
 
 /**
  * @brief Performs the first-stage mounting process.
@@ -30,7 +28,7 @@ bool load_fstab(const std::vector<std::string> &fstab_paths);
  */
 bool FirstStageMount();
 
-} // namespace init
-} // namespace minimal_systems
+}  // namespace init
+}  // namespace minimal_systems
 
-#endif // FIRST_STAGE_MOUNT_H
+#endif  // FIRST_STAGE_MOUNT_H

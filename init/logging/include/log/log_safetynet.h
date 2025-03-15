@@ -22,14 +22,13 @@
 extern "C" {
 #endif
 
-#define linux_errorWriteLog(tag, subTag)                                       \
-	__linux_log_error_write(tag, subTag, -1, NULL, 0)
+#define linux_errorWriteLog(tag, subTag) __linux_log_error_write(tag, subTag, -1, NULL, 0)
 
-#define linux_errorWriteWithInfoLog(tag, subTag, uid, data, dataLen)           \
-	__linux_log_error_write(tag, subTag, uid, data, dataLen)
+#define linux_errorWriteWithInfoLog(tag, subTag, uid, data, dataLen) \
+    __linux_log_error_write(tag, subTag, uid, data, dataLen)
 
-int __linux_log_error_write(int tag, const char *subTag, int32_t uid,
-			    const char *data, uint32_t dataLen);
+int __linux_log_error_write(int tag, const char* subTag, int32_t uid, const char* data,
+                            uint32_t dataLen);
 
 #ifdef __cplusplus
 }

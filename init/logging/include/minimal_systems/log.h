@@ -71,24 +71,24 @@ extern "C" {
  * Android log priority values, in increasing order of priority.
  */
 typedef enum linux_LogPriority {
-	/** For internal use only.  */
-	LINUX_LOG_UNKNOWN = 0,
-	/** The default priority, for internal use only.  */
-	LINUX_LOG_DEFAULT, /* only for SetMinPriority() */
-	/** Verbose logging. Should typically be disabled for a release apk. */
-	LINUX_LOG_VERBOSE,
-	/** Debug logging. Should typically be disabled for a release apk. */
-	LINUX_LOG_DEBUG,
-	/** Informational logging. Should typically be disabled for a release apk. */
-	LINUX_LOG_INFO,
-	/** Warning logging. For use with recoverable failures. */
-	LINUX_LOG_WARN,
-	/** Error logging. For use with unrecoverable failures. */
-	LINUX_LOG_ERROR,
-	/** Fatal logging. For use when aborting. */
-	LINUX_LOG_FATAL,
-	/** For internal use only.  */
-	LINUX_LOG_SILENT, /* only for SetMinPriority(); must be last */
+    /** For internal use only.  */
+    LINUX_LOG_UNKNOWN = 0,
+    /** The default priority, for internal use only.  */
+    LINUX_LOG_DEFAULT, /* only for SetMinPriority() */
+    /** Verbose logging. Should typically be disabled for a release apk. */
+    LINUX_LOG_VERBOSE,
+    /** Debug logging. Should typically be disabled for a release apk. */
+    LINUX_LOG_DEBUG,
+    /** Informational logging. Should typically be disabled for a release apk. */
+    LINUX_LOG_INFO,
+    /** Warning logging. For use with recoverable failures. */
+    LINUX_LOG_WARN,
+    /** Error logging. For use with unrecoverable failures. */
+    LINUX_LOG_ERROR,
+    /** Fatal logging. For use when aborting. */
+    LINUX_LOG_FATAL,
+    /** For internal use only.  */
+    LINUX_LOG_SILENT, /* only for SetMinPriority(); must be last */
 } linux_LogPriority;
 
 /**
@@ -98,7 +98,7 @@ typedef enum linux_LogPriority {
  * @return 1 if the message was written to the log, or -EPERM if it was not; see
  * __linux_log_is_loggable().
  */
-int __linux_log_write(int prio, const char *tag, const char *text);
+int __linux_log_write(int prio, const char* tag, const char* text);
 
 /**
  * Writes a formatted string to the log, with priority `prio` and tag `tag`.
@@ -108,8 +108,8 @@ int __linux_log_write(int prio, const char *tag, const char *text);
  * @return 1 if the message was written to the log, or -EPERM if it was not; see
  * __linux_log_is_loggable().
  */
-int __linux_log_print(int prio, const char *tag, const char *fmt, ...)
-	__attribute__((__format__(printf, 3, 4)));
+int __linux_log_print(int prio, const char* tag, const char* fmt, ...)
+        __attribute__((__format__(printf, 3, 4)));
 
 /**
  * Equivalent to __linux_log_print(), but taking a `va_list`.
@@ -118,8 +118,8 @@ int __linux_log_print(int prio, const char *tag, const char *fmt, ...)
  * @return 1 if the message was written to the log, or -EPERM if it was not; see
  * __linux_log_is_loggable().
  */
-int __linux_log_vprint(int prio, const char *tag, const char *fmt, va_list ap)
-	__attribute__((__format__(printf, 3, 0)));
+int __linux_log_vprint(int prio, const char* tag, const char* fmt, va_list ap)
+        __attribute__((__format__(printf, 3, 0)));
 
 /**
  * Writes an assertion failure to the log (as `LINUX_LOG_FATAL`) and to
@@ -137,37 +137,37 @@ int __linux_log_vprint(int prio, const char *tag, const char *fmt, va_list ap)
  * including the source filename and line number more conveniently than this
  * function.
  */
-void __linux_log_assert(const char *cond, const char *tag, const char *fmt, ...)
-	__attribute__((__noreturn__)) __attribute__((__format__(printf, 3, 4)));
+void __linux_log_assert(const char* cond, const char* tag, const char* fmt, ...)
+        __attribute__((__noreturn__)) __attribute__((__format__(printf, 3, 4)));
 
 /**
  * Identifies a specific log buffer for __linux_log_buf_write()
  * and __linux_log_buf_print().
  */
 typedef enum log_id {
-	LOG_ID_MIN = 0,
+    LOG_ID_MIN = 0,
 
-	/** The main log buffer. This is the only log buffer available to apps. */
-	LOG_ID_MAIN = 0,
-	/** The radio log buffer. */
-	LOG_ID_RADIO = 1,
-	/** The event log buffer. */
-	LOG_ID_EVENTS = 2,
-	/** The system log buffer. */
-	LOG_ID_SYSTEM = 3,
-	/** The crash log buffer. */
-	LOG_ID_CRASH = 4,
-	/** The statistics log buffer. */
-	LOG_ID_STATS = 5,
-	/** The security log buffer. */
-	LOG_ID_SECURITY = 6,
-	/** The kernel log buffer. */
-	LOG_ID_KERNEL = 7,
+    /** The main log buffer. This is the only log buffer available to apps. */
+    LOG_ID_MAIN = 0,
+    /** The radio log buffer. */
+    LOG_ID_RADIO = 1,
+    /** The event log buffer. */
+    LOG_ID_EVENTS = 2,
+    /** The system log buffer. */
+    LOG_ID_SYSTEM = 3,
+    /** The crash log buffer. */
+    LOG_ID_CRASH = 4,
+    /** The statistics log buffer. */
+    LOG_ID_STATS = 5,
+    /** The security log buffer. */
+    LOG_ID_SECURITY = 6,
+    /** The kernel log buffer. */
+    LOG_ID_KERNEL = 7,
 
-	LOG_ID_MAX,
+    LOG_ID_MAX,
 
-	/** Let the logging function choose the best log target. */
-	LOG_ID_DEFAULT = 0x7FFFFFFF
+    /** Let the logging function choose the best log target. */
+    LOG_ID_DEFAULT = 0x7FFFFFFF
 } log_id_t;
 
 /**
@@ -179,8 +179,7 @@ typedef enum log_id {
  * @return 1 if the message was written to the log, or -EPERM if it was not; see
  * __linux_log_is_loggable().
  */
-int __linux_log_buf_write(int bufID, int prio, const char *tag,
-			  const char *text);
+int __linux_log_buf_write(int bufID, int prio, const char* tag, const char* text);
 
 /**
  * Writes a formatted string to log buffer `id`,
@@ -193,46 +192,45 @@ int __linux_log_buf_write(int bufID, int prio, const char *tag,
  * @return 1 if the message was written to the log, or -EPERM if it was not; see
  * __linux_log_is_loggable().
  */
-int __linux_log_buf_print(int bufID, int prio, const char *tag, const char *fmt,
-			  ...) __attribute__((__format__(printf, 4, 5)));
+int __linux_log_buf_print(int bufID, int prio, const char* tag, const char* fmt, ...)
+        __attribute__((__format__(printf, 4, 5)));
 
 /**
  * Logger data struct used for writing log messages to liblog via __linux_log_write_logger_data()
  * and sending log messages to user defined loggers specified in __linux_log_set_logger().
  */
 struct __linux_log_message {
-	/** Must be set to `sizeof(__linux_log_message)` and is used for versioning. */
-	size_t struct_size;
+    /** Must be set to `sizeof(__linux_log_message)` and is used for versioning. */
+    size_t struct_size;
 
-	/** {@link log_id_t} values. */
-	int32_t buffer_id;
+    /** {@link log_id_t} values. */
+    int32_t buffer_id;
 
-	/** {@link LINUX_LOGPriority} values. */
-	int32_t priority;
+    /** {@link LINUX_LOGPriority} values. */
+    int32_t priority;
 
-	/** The tag for the log message. */
-	const char *tag;
+    /** The tag for the log message. */
+    const char* tag;
 
-	/** Optional file name, may be set to nullptr. */
-	const char *file;
+    /** Optional file name, may be set to nullptr. */
+    const char* file;
 
-	/** Optional line number, ignore if file is nullptr. */
-	uint32_t line;
+    /** Optional line number, ignore if file is nullptr. */
+    uint32_t line;
 
-	/** The log message itself. */
-	const char *message;
+    /** The log message itself. */
+    const char* message;
 };
 
 /**
  * Prototype for the 'logger' function that is called for every log message.
  */
-typedef void (*__linux_logger_function)(
-	const struct __linux_log_message *log_message);
+typedef void (*__linux_logger_function)(const struct __linux_log_message* log_message);
 /**
  * Prototype for the 'abort' function that is called when liblog will abort due to
  * __linux_log_assert() failures.
  */
-typedef void (*__linux_aborter_function)(const char *abort_message);
+typedef void (*__linux_aborter_function)(const char* abort_message);
 
 /**
  * Writes the log message specified by log_message.  log_message includes additional file name and
@@ -247,8 +245,7 @@ typedef void (*__linux_aborter_function)(const char *abort_message);
  *
  * Available since API level 30.
  */
-void __linux_log_write_log_message(struct __linux_log_message *log_message)
-	__INTRODUCED_IN(30);
+void __linux_log_write_log_message(struct __linux_log_message* log_message) __INTRODUCED_IN(30);
 
 /**
  * Sets a user defined logger function.  All log messages sent to liblog will be set to the
@@ -263,26 +260,26 @@ void __linux_log_write_log_message(struct __linux_log_message *log_message)
 void __linux_log_set_logger(__linux_logger_function logger) __INTRODUCED_IN(30);
 
 /**
- * Writes the log message to logd.  This is an {@link __linux_logger_function} and can be provided to
+ * Writes the log message to logd.  This is an {@link __linux_logger_function} and can be provided
+ * to
  * __linux_log_set_logger().  It is the default logger when running liblog on a device.
  *
  * @param log_message the log message to write, see {@link __linux_log_message}.
  *
  * Available since API level 30.
  */
-void __linux_log_logd_logger(const struct __linux_log_message *log_message)
-	__INTRODUCED_IN(30);
+void __linux_log_logd_logger(const struct __linux_log_message* log_message) __INTRODUCED_IN(30);
 
 /**
- * Writes the log message to stderr.  This is an {@link __linux_logger_function} and can be provided to
+ * Writes the log message to stderr.  This is an {@link __linux_logger_function} and can be provided
+ * to
  * __linux_log_set_logger().  It is the default logger when running liblog on host.
  *
  * @param log_message the log message to write, see {@link __linux_log_message}.
  *
  * Available since API level 30.
  */
-void __linux_log_stderr_logger(const struct __linux_log_message *log_message)
-	__INTRODUCED_IN(30);
+void __linux_log_stderr_logger(const struct __linux_log_message* log_message) __INTRODUCED_IN(30);
 
 /**
  * Sets a user defined aborter function that is called for __linux_log_assert() failures.  This
@@ -293,8 +290,7 @@ void __linux_log_stderr_logger(const struct __linux_log_message *log_message)
  *
  * Available since API level 30.
  */
-void __linux_log_set_aborter(__linux_aborter_function aborter)
-	__INTRODUCED_IN(30);
+void __linux_log_set_aborter(__linux_aborter_function aborter) __INTRODUCED_IN(30);
 
 /**
  * Calls the stored aborter function.  This allows for other logging libraries to use the same
@@ -305,7 +301,7 @@ void __linux_log_set_aborter(__linux_aborter_function aborter)
  *
  * Available since API level 30.
  */
-void __linux_log_call_aborter(const char *abort_message) __INTRODUCED_IN(30);
+void __linux_log_call_aborter(const char* abort_message) __INTRODUCED_IN(30);
 
 /**
  * Sets android_set_abort_message() on device then aborts().  This is the default aborter.
@@ -315,8 +311,8 @@ void __linux_log_call_aborter(const char *abort_message) __INTRODUCED_IN(30);
  *
  * Available since API level 30.
  */
-void __linux_log_default_aborter(const char *abort_message)
-	__attribute__((noreturn)) __INTRODUCED_IN(30);
+void __linux_log_default_aborter(const char* abort_message) __attribute__((noreturn))
+__INTRODUCED_IN(30);
 
 /**
  * Use the per-tag properties "log.tag.<tagname>" along with the minimum priority from
@@ -335,8 +331,7 @@ void __linux_log_default_aborter(const char *abort_message)
  *
  * Available since API level 30.
  */
-int __linux_log_is_loggable(int prio, const char *tag, int default_prio)
-	__INTRODUCED_IN(30);
+int __linux_log_is_loggable(int prio, const char* tag, int default_prio) __INTRODUCED_IN(30);
 
 /**
  * Use the per-tag properties "log.tag.<tagname>" along with the minimum priority from
@@ -356,8 +351,8 @@ int __linux_log_is_loggable(int prio, const char *tag, int default_prio)
  *
  * Available since API level 30.
  */
-int __linux_log_is_loggable_len(int prio, const char *tag, size_t len,
-				int default_prio) __INTRODUCED_IN(30);
+int __linux_log_is_loggable_len(int prio, const char* tag, size_t len, int default_prio)
+        __INTRODUCED_IN(30);
 
 /**
  * Sets the minimum priority that will be logged for this process.
@@ -387,7 +382,7 @@ int32_t __linux_log_get_minimum_priority(void) __INTRODUCED_IN(30);
  *
  * Available since API level 30.
  */
-void __linux_log_set_default_tag(const char *tag) __INTRODUCED_IN(30);
+void __linux_log_set_default_tag(const char* tag) __INTRODUCED_IN(30);
 
 #ifdef __cplusplus
 }

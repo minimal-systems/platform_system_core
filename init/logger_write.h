@@ -18,4 +18,4 @@
 
 #include <string>
 
-std::string &GetDefaultTag();
+std::string& GetDefaultTag();
