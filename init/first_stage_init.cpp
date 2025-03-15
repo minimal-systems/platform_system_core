@@ -18,6 +18,7 @@
 #include "property_manager.h"
 #include "util.h"
 #include "verify.h"
+#include "libbase.h"
 
 using namespace std::literals;
 
@@ -124,6 +125,20 @@ bool IsRecoveryMode() {
 
 bool IsNormalBootForced() {
     return GetProperty("ro.bootmode") == "normal";
+}
+
+std::string GetPageSizeSuffix() {
+    static const size_t page_size = sysconf(_SC_PAGE_SIZE);
+    if (page_size <= 4096) {
+        return "";
+    }
+    LOGD("_%zuk", page_size/1024);
+    return minimal_systems::base::StringPrintf("_%zuk", page_size / 1024);
+}
+
+constexpr bool EndsWith(const std::string_view str, const std::string_view suffix) {
+    return str.size() >= suffix.size() &&
+           0 == str.compare(str.size() - suffix.size(), suffix.size(), suffix);
 }
 
 const bool ktestingflag = true;
@@ -275,6 +290,8 @@ int FirstStageMain(int argc, char** argv) {
         LOGE("Kernel module loading failed");
         return -1;
     }
+
+    GetPageSizeSuffix();
 
     ExtractRootUUID(cmdline);
 

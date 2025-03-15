@@ -16,6 +16,7 @@ set(INIT_SOURCES
     verify.cpp
     util.cpp
     boot_clock.cpp
+    libbase.cpp
 )
 
 # Compiler flags

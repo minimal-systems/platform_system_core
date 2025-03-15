@@ -16,7 +16,8 @@ LOCAL_SRC_FILES := \
     fs_mgr.cpp \
     verify.cpp \
     util.cpp \
-    boot_clock.cpp
+    boot_clock.cpp \
+    libbase.cpp
 
 LOCAL_CFLAGS := \
     -g \
