@@ -37,9 +37,6 @@ Result<uid_t> DecodeUid(const std::string& name);
 void SetStdioToDevNull(char** argv);
 void InitKernelLogging(char** argv);
 
-// reboot_utils.h
-inline void SetFatalRebootTarget(const std::optional<std::string>& = std::nullopt) {}
-
 // Utility functions
 std::string ExtractRootUUID(const std::string& cmdline);
 std::string NormalizePath(const std::string& path);
@@ -60,6 +57,13 @@ std::string ReadFirstLine(const std::string& path);
 // Get system property
 std::string GetProperty(const std::string& key);
 
+/**
+ * Writes the given string to the specified file descriptor.
+ * @param content The string to write.
+ * @param fd The file descriptor.
+ * @return true on success, false on failure.
+ */
+bool WriteStringToFd(const std::string& content, int fd);
 }  // namespace init
 }  // namespace minimal_systems
 

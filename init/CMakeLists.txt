@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.18)
 project(init CXX)
+
 set(BUILD_TOP "/run/media/kjones/build/android/minimal_android")
+set(ROOTFS_INSTALL_DIR "${BUILD_TOP}/out/target/product/generic/rootfs")
 
 # Define source files for init
 set(INIT_SOURCES
@@ -17,6 +19,11 @@ set(INIT_SOURCES
     util.cpp
     boot_clock.cpp
     libbase.cpp
+    modprobe.cpp
+    exthandler.cpp
+    libmodprobe_ext.cpp
+    reboot_utils.cpp
+    capabilities.cpp
 )
 
 # Compiler flags
@@ -39,18 +46,28 @@ add_compile_options(
     -fno-ident
 )
 
-# Include directories
+# Locate installed liblog and libcap from AndroidCore
+set(LIBLOG_DIR "${ROOTFS_INSTALL_DIR}/usr/lib")
+set(LIBCAP_DIR "${ROOTFS_INSTALL_DIR}/usr/lib")
+set(LIBLOG_INCLUDE_DIR "${ROOTFS_INSTALL_DIR}/usr/include")
+set(LIBCAP_INCLUDE_DIR "${ROOTFS_INSTALL_DIR}/usr/include")
+
+# Ensure liblog and libcap headers are included
+include_directories(${LIBLOG_INCLUDE_DIR} ${LIBCAP_INCLUDE_DIR})
+
 include_directories(
     ${BUILD_TOP}/system/logging/logd/logging/include
-    ${BUILD_TOP}/system/core/init
+    ${BUILD_TOP}/system/logging/logd/logging/include/log
+    ${BUILD_TOP}/system/logging/logd/logging/include/minimal_systems
+    ${BUILD_TOP}/system/logging/logd/logging/include/private
+    ${BUILD_TOP}/system/logging/logd
 )
+
+include_directories(${BUILD_TOP}/external/libcap/include)
+
+
 # Add executable
 add_executable(init ${INIT_SOURCES})
-
-# Link against liblog explicitly
-
-# Specify where to find liblog
-link_directories(${BUILT_TOP}/system/core/build/logging/src/logging-build/logd)
 
 # Linker flags
 target_link_options(init PRIVATE
@@ -61,8 +78,12 @@ target_link_options(init PRIVATE
     -Wl,--exclude-libs,ALL
 )
 
-# Link additional system libraries
-target_link_libraries(init PRIVATE ssl crypto)
+# Link to prebuilt liblog and libcap
+target_link_libraries(init PRIVATE
+    ${LIBLOG_DIR}/liblog.so
+    ${LIBCAP_DIR}/libcap.so
+    ssl crypto
+)
 
-# Set installation path for init
-install(TARGETS init DESTINATION /run/media/kjones/build/android/minimal_android/out/target/product/generic/rootfs/usr/bin)
+# Install init binary
+install(TARGETS init RUNTIME DESTINATION ${ROOTFS_INSTALL_DIR}/usr/bin)

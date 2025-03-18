@@ -30,7 +30,6 @@ int main(int argc, char** argv) {
     using namespace minimal_systems::init;
 
     try {
-
         // Initialize the PropertyManager
         auto& props = PropertyManager::instance();
         auto& propertyManager = PropertyManager::instance();
@@ -42,6 +41,7 @@ int main(int argc, char** argv) {
             setprop("ro.bootmode", "normal");
         }
 
+        LOGD("starting first stage init");
         int first_stage_result = FirstStageMain(argc, argv);
         if (first_stage_result != 0) {
             LOGE("FirstStageMain failed with result: %d. Exiting...", first_stage_result);

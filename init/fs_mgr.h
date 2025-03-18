@@ -35,6 +35,15 @@ bool MountPartition(const std::string& device, const std::string& mount_point,
  */
 bool MountOverlayFs(const std::string& mount_point);
 
+/**
+ * Extracts a key-value pair from a boot configuration string.
+ * @param bootconfig The full boot configuration string.
+ * @param key The key to search for.
+ * @param out_value Pointer to store the extracted value.
+ */
+void GetBootconfigFromString(const std::string& bootconfig, const std::string& key,
+                             std::string* out_value);
+
 }  // namespace fs_mgr
 }  // namespace minimal_systems
 

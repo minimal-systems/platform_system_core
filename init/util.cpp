@@ -125,7 +125,7 @@ void SetStdioToDevNull(char** argv) {
  */
 void InitKernelLogging(char** argv) {
     // TODO: Implement or clarify SetFatalRebootTarget() behavior.
-    SetFatalRebootTarget();
+    // SetFatalRebootTarget();
     LOGI("Kernel logging initialized successfully.");
 }
 
@@ -260,6 +260,12 @@ void DetectAndSetGPUType() {
         LOGW("GPU: None detected");
         setprop("ro.boot.gpu", "none");
     }
+}
+
+// Function to write a string to a file descriptor
+bool WriteStringToFd(const std::string& content, int fd) {
+    ssize_t written = write(fd, content.c_str(), content.size());
+    return written == static_cast<ssize_t>(content.size());
 }
 
 }  // namespace init

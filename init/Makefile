@@ -17,7 +17,8 @@ LOCAL_SRC_FILES := \
     verify.cpp \
     util.cpp \
     boot_clock.cpp \
-    libbase.cpp
+    libbase.cpp \
+    modprobe.cpp
 
 LOCAL_CFLAGS := \
     -g \
