@@ -40,7 +40,12 @@ std::unique_ptr<SELinuxEntry> selinux_entries_head;
 bool selinux_disabled_permanently = false;
 
 /**
- * Determine SELinux enforcing status from system properties.
+ * Determines SELinux enforcement mode based on kernel boot options.
+ *
+ * Checks `sysboot.selinux` via cmdline and bootconfig to decide if SELinux should
+ * start in enforcing or permissive mode.
+ *
+ * @return `SELINUX_ENFORCING` or `SELINUX_PERMISSIVE`.
  */
 EnforcingStatus StatusFromProperty() {
     std::string value;
@@ -56,7 +61,12 @@ EnforcingStatus StatusFromProperty() {
 }
 
 /**
- * Check if SELinux is enforcing, considering overrides.
+ * Returns the effective SELinux enforcement state.
+ *
+ * This respects compile-time overrides (ALLOW_PERMISSIVE_SELINUX) and runtime
+ * state such as permanent disablement from prior failures.
+ *
+ * @return true if SELinux is enforcing, false otherwise.
  */
 bool IsEnforcing() {
     if (selinux_disabled_permanently) {
@@ -70,7 +80,12 @@ bool IsEnforcing() {
 }
 
 /**
- * Check if a given path is whitelisted for SELinux policy scanning.
+ * Checks whether a given SELinux path is whitelisted for scanning.
+ *
+ * Used to filter irrelevant or non-standard paths when looking for policies.
+ *
+ * @param path Absolute or relative path to verify.
+ * @return true if path is in the known whitelist, false otherwise.
  */
 bool IsWhitelistedPath(const std::string& path) {
     return std::find(kSelinuxWhitelist.begin(), kSelinuxWhitelist.end(), path) !=
@@ -78,7 +93,11 @@ bool IsWhitelistedPath(const std::string& path) {
 }
 
 /**
- * Store SELinux entries for debugging and policy analysis.
+ * Stores a SELinux entry in a linked list for future inspection.
+ *
+ * Primarily used for debugging or audit purposes during policy loading.
+ *
+ * @param entry A valid SELinux context or object rule string.
  */
 void StoreSELinuxEntry(const std::string& entry) {
     auto new_entry = std::make_unique<SELinuxEntry>();
@@ -88,7 +107,13 @@ void StoreSELinuxEntry(const std::string& entry) {
 }
 
 /**
- * Parse the SELinux configuration file and set system properties.
+ * Parses the SELinux configuration file and exports values as properties.
+ *
+ * Extracts the `SELINUX` mode and `SELINUXTYPE` policy from `/etc/selinux/config`,
+ * and sets them to `ro.boot.selinux` and `ro.boot.selinux_type` respectively.
+ *
+ * @param filepath Path to SELinux configuration file.
+ * @return true on successful parsing and export, false otherwise.
  */
 bool ParseSELinuxConfig(const std::string& filepath) {
     std::ifstream file(filepath);
@@ -123,7 +148,13 @@ bool ParseSELinuxConfig(const std::string& filepath) {
 }
 
 /**
- * Parse a SELinux policy file and store valid entries.
+ * Parses a given SELinux policy file and stores any valid entries.
+ *
+ * Only entries containing `system_u:object_` are considered relevant.
+ * Useful for scanning `.te` or `.pp` files for active rules.
+ *
+ * @param filepath Full path to a policy file.
+ * @return true if any relevant entries were found, false otherwise.
  */
 bool ParseSELinuxFile(const std::string& filepath) {
     std::ifstream file(filepath);
@@ -148,7 +179,12 @@ bool ParseSELinuxFile(const std::string& filepath) {
 }
 
 /**
- * Traverse a given directory for SELinux policy files.
+ * Scans a directory for SELinux policy files and parses them.
+ *
+ * Only regular files are processed. Errors opening the directory are logged.
+ *
+ * @param dir_path Directory to scan for policy files.
+ * @return true if at least one policy file was parsed successfully.
  */
 bool TraverseAndParse(const std::string& dir_path) {
     DIR* dir = opendir(dir_path.c_str());
@@ -179,7 +215,18 @@ bool TraverseAndParse(const std::string& dir_path) {
 }
 
 /**
- * Initialize SELinux and apply policy settings.
+ * Initializes SELinux by parsing configuration and scanning policy directories.
+ *
+ * This function:
+ * - Redirects stdio and sets up kernel logging.
+ * - Parses the main SELinux configuration file.
+ * - Traverses whitelisted policy directories.
+ * - Sets fallback properties if configuration is incomplete.
+ *
+ * If no configuration or policy files are found, SELinux is permanently disabled.
+ *
+ * @param argv Command-line arguments (used for stdio redirection).
+ * @return 1 if SELinux setup is valid, 0 if disabled.
  */
 int SetupSelinux(char** argv) {
     SetStdioToDevNull(argv);
@@ -215,6 +262,7 @@ int SetupSelinux(char** argv) {
 
     return 1;
 }
+
 
 }  // namespace init
 }  // namespace minimal_systems
