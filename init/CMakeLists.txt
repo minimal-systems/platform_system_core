@@ -38,10 +38,9 @@ add_definitions(
 )
 
 add_compile_options(
-    -g
-    -Wno-format
-    -Wno-misleading-indentation
+    -g                             # Debug symbols
     -Wno-return-type
+    -Wno-format                    # You may want this on instead
     -fno-unwind-tables
     -fno-asynchronous-unwind-tables
     -fno-math-errno
@@ -49,6 +48,7 @@ add_compile_options(
     -fmerge-all-constants
     -fno-ident
 )
+
 
 # Locate installed liblog and libcap from AndroidCore
 set(LIBLOG_DIR "${ROOTFS_INSTALL_DIR}/usr/lib")

@@ -19,7 +19,7 @@ namespace init {
 
 // Function prototypes
 void prepare_log(char** argv);
-bool FirstStageMount();
+bool PerformFirstStageMount();
 void load_loop();
 bool parse_init();
 
@@ -27,20 +27,13 @@ bool parse_init();
 using namespace minimal_systems::init;
 
 int SecondStageMain(int argc, char** argv) {
-
+    (void)argc;
     try {
         // Initialize the PropertyManager
         auto& props = PropertyManager::instance();
         auto& propertyManager = PropertyManager::instance();
         propertyManager.loadProperties("etc/prop.default");
         propertyManager.loadProperties("usr/share/etc/prop.default");
-
-        // Perform first-stage mounting
-        if (!FirstStageMount()) {
-            LOGE("FirstStageMount failed. Exiting...");
-            return EXIT_FAILURE;
-        }
-        LOGI("First stage mount completed.");
 
         // Load SELinux configuration
         SetupSelinux(argv);
@@ -59,18 +52,27 @@ int SecondStageMain(int argc, char** argv) {
         // Sorting and logging all properties from props
         LOGI("Loaded Properties:");
 
-        // Collect properties into a vector for sorting
-        std::vector<std::pair<std::string, std::string>> sortedProperties(
-                props.getAllProperties().begin(), props.getAllProperties().end());
+        // Reserve upfront to avoid unnecessary reallocations
+        const auto& allProps = props.getAllProperties();
+        std::vector<std::pair<std::string, std::string>> sortedProperties;
+        sortedProperties.reserve(allProps.size());
 
-        // Sort properties by key in alphabetical order
+        for (const auto& entry : allProps) {
+            sortedProperties.emplace_back(entry);
+        }
+
+        // Sort using fast lexicographic comparison
         std::sort(sortedProperties.begin(), sortedProperties.end(),
-                  [](const auto& lhs, const auto& rhs) { return lhs.first < rhs.first; });
+                  [](const std::pair<std::string, std::string>& a,
+                     const std::pair<std::string, std::string>& b) {
+                      return a.first < b.first;
+                  });
 
-        // Log the sorted properties
+        // Log sorted output
         for (const auto& [key, value] : sortedProperties) {
             LOGI("  %s = %s", key.c_str(), value.c_str());
         }
+
         return EXIT_SUCCESS;
 
     } catch (const std::exception& ex) {

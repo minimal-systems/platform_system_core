@@ -95,25 +95,25 @@ static void log_to_kernel(int prio, const char* message) {
     switch (prio) {
         case 2:
             kernel_prio = 7;
-            break;  // Verbose -> Debug
+            break;
         case 3:
             kernel_prio = 6;
-            break;  // Debug -> Info
+            break;
         case 4:
             kernel_prio = 5;
-            break;  // Info -> Notice
+            break;
         case 5:
             kernel_prio = 4;
-            break;  // Warn -> Warning
+            break;
         case 6:
             kernel_prio = 3;
-            break;  // Error -> Error
+            break;
         case 7:
             kernel_prio = 2;
-            break;  // Fatal -> Critical
+            break;
         default:
             kernel_prio = 5;
-            break;  // Default to Notice
+            break;
     }
 
     // Ensure no trailing newline before writing
@@ -161,8 +161,9 @@ int __linux_log_print(int prio, const char* tag, const char* fmt, ...) {
     struct tm tm_info;
     localtime_r(&now, &tm_info);
 
+    // Get current timestamp
     char timestamp[32];
-    strftime(timestamp, sizeof(timestamp), "%m-%d %H:%M:%S", &tm_info);
+    formatTimestamp(timestamp, sizeof(timestamp));
 
     // Map priority to character and color
     char prioChar = priorityToChar(prio);

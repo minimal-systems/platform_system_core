@@ -17,13 +17,12 @@
 #include "libbase.h"
 
 #include <stdio.h>
+#include <unistd.h>
+#include <climits>  // for INT_MAX
 #include <fstream>
+#include <regex>
 #include <sstream>
 #include <string>
-#include <regex>
-#include <string>
-#include <unistd.h>
-
 
 namespace minimal_systems {
 namespace base {
@@ -32,40 +31,40 @@ void StringAppendV(std::string* dst, const char* format, va_list ap) {
     // First try with a small fixed size buffer
     char space[1024] __attribute__((__uninitialized__));
 
-    // It's possible for methods that use a va_list to invalidate
-    // the data in it upon use.  The fix is to make a copy
-    // of the structure before using it and use that copy instead.
+    // Copy the va_list before first use
     va_list backup_ap;
     va_copy(backup_ap, ap);
     int result = vsnprintf(space, sizeof(space), format, backup_ap);
     va_end(backup_ap);
 
-    if (result < static_cast<int>(sizeof(space))) {
-        if (result >= 0) {
+    if (result >= 0 && result < static_cast<int>(sizeof(space))) {
+        if (result > 0) {
             // Normal case -- everything fit.
-            dst->append(space, result);
-            return;
+            dst->append(space, static_cast<std::string::size_type>(result));
         }
-
-        if (result < 0) {
-            // Just an error.
-            return;
-        }
+        return;
     }
 
-    // Increase the buffer size to the size requested by vsnprintf,
-    // plus one for the closing \0.
-    int length = result + 1;
+    if (result < 0) {
+        // Just an error.
+        return;
+    }
+
+    // Increase buffer size to accommodate result + null terminator
+    size_t length = static_cast<size_t>(result) + 1;
     char* buf = new char[length];
 
-    // Restore the va_list before we use it again
+    // Restore the va_list before second use
     va_copy(backup_ap, ap);
-    result = vsnprintf(buf, length, format, backup_ap);
+    int safe_len = static_cast<int>(std::min(length, static_cast<size_t>(INT_MAX)));
+    result = vsnprintf(buf, safe_len, format, backup_ap);
     va_end(backup_ap);
 
-    if (result >= 0 && result < length) {
+    if (result >= 0 && static_cast<size_t>(result) < length) {
         // It fit
-        dst->append(buf, result);
+        if (result > 0) {
+            dst->append(buf, static_cast<std::string::size_type>(result));
+        }
     }
     delete[] buf;
 }
@@ -98,43 +97,42 @@ bool ReadFileToString(const std::string& path, std::string* content) {
     return true;
 }
 
-
 /**
  * Cleans a raw command line string:
  *  - Strips everything after '#' (comments)
  *  - Collapses whitespace to a single space
  *  - Trims leading/trailing whitespace
  */
- std::string CleanCmdline(const std::string& input) {
-     std::stringstream ss(input);
-     std::string line;
-     std::string result;
+std::string CleanCmdline(const std::string& input) {
+    std::stringstream ss(input);
+    std::string line;
+    std::string result;
 
-     while (std::getline(ss, line)) {
-         // Trim leading/trailing whitespace
-         line = std::regex_replace(line, std::regex(R"(^\s+|\s+$)"), "");
+    while (std::getline(ss, line)) {
+        // Trim leading/trailing whitespace
+        line = std::regex_replace(line, std::regex(R"(^\s+|\s+$)"), "");
 
-         // Skip empty or full-line comments
-         if (line.empty() || line[0] == '#') continue;
+        // Skip empty or full-line comments
+        if (line.empty() || line[0] == '#') continue;
 
-         // Strip inline comment
-         size_t comment_pos = line.find('#');
-         if (comment_pos != std::string::npos) {
-             line = line.substr(0, comment_pos);
-             line = std::regex_replace(line, std::regex(R"(^\s+|\s+$)"), "");
-         }
+        // Strip inline comment
+        size_t comment_pos = line.find('#');
+        if (comment_pos != std::string::npos) {
+            line = line.substr(0, comment_pos);
+            line = std::regex_replace(line, std::regex(R"(^\s+|\s+$)"), "");
+        }
 
-         // Collapse inner whitespace
-         line = std::regex_replace(line, std::regex(R"([\s]+)"), " ");
+        // Collapse inner whitespace
+        line = std::regex_replace(line, std::regex(R"([\s]+)"), " ");
 
-         if (!line.empty()) {
-             if (!result.empty()) result += ' ';
-             result += line;
-         }
-     }
+        if (!line.empty()) {
+            if (!result.empty()) result += ' ';
+            result += line;
+        }
+    }
 
-     return result;
- }
+    return result;
+}
 
 /**
  * Appends the cleaned contents of `./.cmdline` to `merged_cmdline` if present.
@@ -156,7 +154,6 @@ void AppendLocalCmdline(std::string* merged_cmdline) {
 
     *merged_cmdline += local_cmdline;
 }
-
 
 }  // namespace base
 }  // namespace minimal_systems

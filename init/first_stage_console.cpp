@@ -83,7 +83,7 @@ static pid_t SpawnImage(const char* file) {
     if (!errno) return pid;
 
    LOGE("Failed to spawn '%s': %m", file);
-    return (pid_t)0;
+   return 0;
 }
 
 namespace minimal_systems {
@@ -149,7 +149,6 @@ int FirstStageConsole(const std::string& cmdline, const std::string& bootconfig)
 
     return 0;  // DISABLED
 }
-
 
 }  // namespace init
 }  // namespace minimal_systems

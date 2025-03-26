@@ -96,7 +96,7 @@ static void Copy(const char* src, const char* dst) {
     char buffer[4096];
     ssize_t bytes;
     while ((bytes = read(src_fd, buffer, sizeof(buffer))) > 0) {
-        if (write(dst_fd, buffer, bytes) != bytes) {
+        if (write(dst_fd, buffer, static_cast<size_t>(bytes)) != bytes) {
             LOGE("Write error: %s", strerror(errno));
             break;
         }
@@ -143,7 +143,12 @@ bool IsNormalBootForced() {
 }
 
 std::string GetPageSizeSuffix() {
-    static const size_t page_size = sysconf(_SC_PAGE_SIZE);
+    long page_size_sys = sysconf(_SC_PAGE_SIZE);
+    if (page_size_sys <= 0) {
+        LOGW("sysconf(_SC_PAGE_SIZE) returned invalid value: %ld", page_size_sys);
+        return "";
+    }
+    size_t page_size = static_cast<size_t>(page_size_sys);
     if (page_size <= 4096) {
         return "";
     }
@@ -194,7 +199,7 @@ std::string GetModuleLoadList(BootMode boot_mode, const std::string& dir_path) {
     return module_load_file;
 }
 
-#define MODULE_BASE_DIR "/lib/modules"
+#define MODULE_BASE_DIR "./lib/modules"
 
 bool LoadKernelModules(BootMode boot_mode, bool want_console, bool want_parallel,
                        int& modules_loaded) {
@@ -266,7 +271,9 @@ bool LoadKernelModules(BootMode boot_mode, bool want_console, bool want_parallel
     }
 
     Modprobe m({MODULE_BASE_DIR}, GetModuleLoadList(boot_mode, MODULE_BASE_DIR));
-    bool retval = (want_parallel) ? m.LoadModulesParallel(std::thread::hardware_concurrency())
+    unsigned int hw_threads = std::thread::hardware_concurrency();
+    int thread_count = static_cast<int>(hw_threads);
+    bool retval = (want_parallel) ? m.LoadModulesParallel(thread_count)
                                   : m.LoadListedModules(!want_console);
     modules_loaded = m.GetModuleCount();
     if (modules_loaded > 0) {
@@ -355,7 +362,6 @@ int FirstStageMain(int argc, char** argv) {
         }                       \
     } while (0)
 
-
     umask(0);
     CHECKCALL(clearenv());
     CHECKCALL(setenv("PATH", _PATH_DEFPATH, 1));
@@ -436,10 +442,16 @@ int FirstStageMain(int argc, char** argv) {
         setenv("INIT_DEV_BUILD", "1", 1);
     }
 
-    auto old_root_dir = std::unique_ptr<DIR, decltype(&closedir)>{opendir("/"), closedir};
+    auto dir_deleter = [](DIR* d) {
+        if (d) closedir(d);
+    };
+
+    std::unique_ptr<DIR, decltype(dir_deleter)> old_root_dir(opendir("/"), dir_deleter);
+
     if (!old_root_dir) {
         LOGE("Could not opendir(\"/\"), not freeing ramdisk");
     }
+
 
     struct stat old_root_info {};
     if (stat("/", &old_root_info) != 0) {
@@ -468,6 +480,19 @@ int FirstStageMain(int argc, char** argv) {
 
     DetectAndSetGPUType();
     FreeRamdisk();
+    if (IsChargerMode()) LOGD("Stub: Charger mode detected (no-op)");
+    if (IsNormalBootForced()) LOGD("Stub: Normal boot forced (no-op)");
+    PrepareSwitchRoot();  // no-op call to mark usage
+
+    int dummy_count = 0;
+    LoadKernelModules(BootMode::NORMAL_MODE, false, false, dummy_count);  // dry-run
+
+    // Perform first-stage mounting
+    if (!PerformFirstStageMount()) {
+        LOGE("FirstStageMount failed. Exiting...");
+        return EXIT_FAILURE;
+    }
+    LOGI("First stage mount completed.");
 
     return 0;
 }

@@ -86,7 +86,7 @@ static bool DropBoundingSet(const CapSet& to_keep) {
         if (cap < to_keep.size() && to_keep.test(cap)) {
             continue;
         }
-        if (cap_drop_bound(cap) == -1) {
+        if (cap_drop_bound(static_cast<cap_value_t>(cap)) == -1) {
             LOGE("cap_drop_bound(%zu) failed", cap);
             return false;
         }

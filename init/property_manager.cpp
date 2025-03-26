@@ -9,14 +9,17 @@
 namespace minimal_systems {
 namespace init {
 
+
 #ifdef DEBUG_PROP
 #define DEBUG_LOGD(...) LOGD(__VA_ARGS__)
 #define DEBUG_LOGI(...) LOGI(__VA_ARGS__)
 #define DEBUG_LOGE(...) LOGE(__VA_ARGS__)
+#define DEBUG_LOGW(...) LOGW(__VA_ARGS__)
 #else
 #define DEBUG_LOGD(...)
 #define DEBUG_LOGI(...)
 #define DEBUG_LOGE(...)
+#define DEBUG_LOGW(...)
 #endif
 
 // Singleton instance
@@ -28,27 +31,46 @@ PropertyManager& PropertyManager::instance() {
 // Load properties from a file
 void PropertyManager::loadProperties(const std::string& propertyFile) {
     std::lock_guard<std::mutex> lock(property_mutex);
-    properties.clear();
 
-    if (!propertyFile.empty()) {
-        std::ifstream file(propertyFile);
-        if (!file) {
-            DEBUG_LOGE("Failed to open property file: %s", propertyFile.c_str());
-            return;
+    if (propertyFile.empty()) {
+        DEBUG_LOGW("Property file path is empty. Skipping.");
+        return;
+    }
+
+    std::ifstream file(propertyFile);
+    if (!file) {
+        DEBUG_LOGE("Failed to open property file: %s", propertyFile.c_str());
+        return;
+    }
+
+    DEBUG_LOGI("Loading properties from: %s", propertyFile.c_str());
+
+    std::string line;
+    while (std::getline(file, line)) {
+        // Skip empty or comment lines
+        if (line.empty() || line[0] == '#') {
+            continue;
         }
 
-        std::string line;
-        while (std::getline(file, line)) {
-            std::istringstream lineStream(line);
-            std::string key, value;
-            if (std::getline(lineStream, key, '=') && std::getline(lineStream, value)) {
-                properties[key] = value;
-                DEBUG_LOGD("Loaded property: %s = %s", key.c_str(), value.c_str());
-            }
+        // Trim whitespace (optional but recommended)
+        line.erase(0, line.find_first_not_of(" \t\r\n"));
+        line.erase(line.find_last_not_of(" \t\r\n") + 1);
+
+        std::istringstream lineStream(line);
+        std::string key, value;
+        if (std::getline(lineStream, key, '=') && std::getline(lineStream, value)) {
+            key.erase(key.find_last_not_of(" \t\r\n") + 1);
+            value.erase(0, value.find_first_not_of(" \t\r\n"));
+            value.erase(value.find_last_not_of(" \t\r\n") + 1);
+
+            properties[key] = value;  // overwrite if already exists
+            DEBUG_LOGD("Loaded property: %s = %s", key.c_str(), value.c_str());
         }
     }
-    DEBUG_LOGI("Properties loaded successfully.");
+
+    DEBUG_LOGI("Finished loading properties from: %s", propertyFile.c_str());
 }
+
 
 // Save properties to a file
 void PropertyManager::saveProperties(const std::string& propertyFile) const {

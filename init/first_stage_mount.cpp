@@ -89,6 +89,7 @@ void parse_fstab_file(const std::string& filepath) {
 // Function to load fstab from a list of paths, first without normalization, then with normalization
 bool load_fstab(const std::vector<std::string>& fstab_paths) {
     auto& props = PropertyManager::instance();
+    (void)props;
     std::string hardware = getprop("ro.boot.hardware");
 
     for (const auto& path : fstab_paths) {
@@ -127,8 +128,9 @@ bool load_fstab(const std::vector<std::string>& fstab_paths) {
 }
 
 // Main function for first-stage mounting process
-bool FirstStageMount() {
+bool PerformFirstStageMount() {
     auto& props = PropertyManager::instance();
+    (void)props;
     std::string boot_mode = getprop("ro.boot.mode");
 
     const std::vector<std::string> fstab_paths = {"etc/fstab", "usr/share/etc/fstab", "/etc/fstab"};

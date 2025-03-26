@@ -19,6 +19,7 @@
 #include <string>
 
 #include "log_new.h"
+#include "bootcfg.h"
 #include "property_manager.h"
 
 namespace minimal_systems {
@@ -225,7 +226,11 @@ bool IsRunningInRamdisk() {
 }
 
 std::string GetProperty(const std::string& key) {
-    return getprop(key);
+  std::string value = minimal_systems::bootcfg::Get(key);
+  if (!value.empty()) {
+    return value;
+  }
+  return getprop(key);
 }
 
 bool FileExists(const std::string& path) {
@@ -302,7 +307,6 @@ void DetectAndSetGPUType() {
         return;
     }
 
-    // Fallback: ARM or ARM64 platform detection
     if (FileContains("/proc/cpuinfo", "ARM") || FileContains("/proc/cpuinfo", "aarch64")) {
         LOGI("GPU: ARM64/ARM platform detected");
         setprop("ro.boot.gpu", "arm");

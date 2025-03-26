@@ -69,7 +69,7 @@ bool LoadFstab(const std::vector<std::string>& fstab_paths);
  *
  * @return True if the first-stage mount is successful, false otherwise.
  */
-bool FirstStageMount();
+bool PerformFirstStageMount();  // Renamed to prevent conflict with class
 
 }  // namespace init
 }  // namespace minimal_systems
