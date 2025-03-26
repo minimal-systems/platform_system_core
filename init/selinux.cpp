@@ -29,11 +29,11 @@ namespace init {
 
 // Hardened SELinux directories for major Linux distributions
 static const std::vector<std::string> kSelinuxWhitelist = {
-        "/etc/selinux",        // Standard SELinux config
-        "/usr/share/selinux",  // Common SELinux policy storage
-        "/usr/etc/selinux",    // Some distributions use this
-        "/lib/selinux",        // SELinux modules and libraries
-        "/run/selinux",        // Runtime SELinux directory
+        "etc/selinux",        // Standard SELinux config
+        "usr/share/selinux",  // Common SELinux policy storage
+        "usr/etc/selinux",    // Some distributions use this
+        "lib/selinux",        // SELinux modules and libraries
+        "run/selinux",        // Runtime SELinux directory
 };
 
 std::unique_ptr<SELinuxEntry> selinux_entries_head;

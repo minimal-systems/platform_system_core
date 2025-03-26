@@ -6,10 +6,12 @@ set(ROOTFS_INSTALL_DIR "${BUILD_TOP}/out/target/product/generic/rootfs")
 
 # Define source files for init
 set(INIT_SOURCES
+    main.cpp
     init.cpp
     selinux.cpp
     init_parser.cpp
     first_stage_mount.cpp
+    first_stage_console.cpp
     first_stage_init.cpp
     logprint.cpp
     logger_write.cpp
@@ -24,6 +26,7 @@ set(INIT_SOURCES
     libmodprobe_ext.cpp
     reboot_utils.cpp
     capabilities.cpp
+    bootcfg.cpp
 )
 
 # Compiler flags
@@ -31,6 +34,7 @@ add_definitions(
     -DTARGET_DEVICE="${TARGET_DEVICE}"
     -DALLOW_PERMISSIVE_SELINUX=1
     -DREBOOT_BOOTLOADER_ON_PANIC=0
+    -DALLOW_FIRST_STAGE_CONSOLE=1
 )
 
 add_compile_options(

@@ -23,11 +23,10 @@ bool FirstStageMount();
 void load_loop();
 bool parse_init();
 
-}  // namespace init
-}  // namespace minimal_systems
 
-int main(int argc, char** argv) {
-    using namespace minimal_systems::init;
+using namespace minimal_systems::init;
+
+int SecondStageMain(int argc, char** argv) {
 
     try {
         // Initialize the PropertyManager
@@ -35,18 +34,6 @@ int main(int argc, char** argv) {
         auto& propertyManager = PropertyManager::instance();
         propertyManager.loadProperties("etc/prop.default");
         propertyManager.loadProperties("usr/share/etc/prop.default");
-
-        // Step 2: Set default critical properties
-        if (getprop("ro.bootmode").empty()) {
-            setprop("ro.bootmode", "normal");
-        }
-
-        LOGD("starting first stage init");
-        int first_stage_result = FirstStageMain(argc, argv);
-        if (first_stage_result != 0) {
-            LOGE("FirstStageMain failed with result: %d. Exiting...", first_stage_result);
-            return EXIT_FAILURE;
-        }
 
         // Perform first-stage mounting
         if (!FirstStageMount()) {
@@ -94,3 +81,5 @@ int main(int argc, char** argv) {
         return EXIT_FAILURE;
     }
 }
+}  // namespace init
+}  // namespace minimal_systems

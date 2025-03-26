@@ -44,5 +44,18 @@ void StringAppendV(std::string* dst, const char* format, va_list ap)
 // Returns true on success, false on failure.
 bool ReadFileToString(const std::string& path, std::string* content);
 
+/**
+ * Cleans a raw command line string:
+ * - Strips comments starting with '#'
+ * - Normalizes all whitespace to single spaces
+ * - Trims leading/trailing spaces
+ */
+std::string CleanCmdline(const std::string& input);
+
+/**
+ * Appends the cleaned contents of `./.cmdline` to `merged_cmdline` if present.
+ */
+void AppendLocalCmdline(std::string* merged_cmdline);
+
 }  // namespace base
 }  // namespace minimal_systems

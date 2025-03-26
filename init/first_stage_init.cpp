@@ -23,6 +23,7 @@
 
 #include <bits/std_thread.h>
 #include "first_stage_mount.h"
+#include "first_stage_console.h"
 #include "fs_mgr.h"
 #include "libbase.h"
 #include "log_new.h"
@@ -30,6 +31,7 @@
 #include "reboot_utils.h"
 #include "util.h"
 #include "verify.h"
+#include "bootcfg.h"
 
 using namespace std::literals;
 namespace fs = std::filesystem;
@@ -345,14 +347,14 @@ int FirstStageMain(int argc, char** argv) {
     }
 
     std::vector<std::pair<std::string, int>> errors;
-#define CHECKCALL(x)                                                                  \
-    do {                                                                              \
-        int _err = (x);                                                               \
-        if (_err != 0) {                                                              \
-            LOGE("%s failed with error: %s (errno: %d)", #x, strerror(errno), errno); \
-            errors.emplace_back(#x " failed", errno);                                 \
-        }                                                                             \
+    #define CHECKCALL(x)            \
+    do {                        \
+        int _err = (x);         \
+        if (_err != 0) {        \
+            errors.emplace_back(#x " failed", errno); \
+        }                       \
     } while (0)
+
 
     umask(0);
     CHECKCALL(clearenv());
@@ -371,6 +373,13 @@ int FirstStageMain(int argc, char** argv) {
     CHECKCALL(chmod("/proc/cmdline", 0440));
     std::string cmdline;
     minimal_systems::base::ReadFileToString("/proc/cmdline", &cmdline);
+    std::string merged_cmdline = cmdline;
+
+    // Merge overrides from ./.cmdline if present
+    minimal_systems::base::AppendLocalCmdline(&merged_cmdline);
+
+    LOGI("Base cmdline   : %s", cmdline.c_str());
+    LOGI("Merged cmdline : %s", merged_cmdline.c_str());
 
     CHECKCALL(chmod("/proc/bootconfig", 0440));
     std::string bootconfig;
@@ -399,6 +408,9 @@ int FirstStageMain(int argc, char** argv) {
     CHECKCALL(mount("tmpfs", kSecondStageRes, "tmpfs", MS_NOSUID | MS_NODEV,
                     "mode=0755,uid=0,gid=0"));
 
+    // mount efivars
+    CHECKCALL(mount("efivarfs", "/sys/firmware/efi/efivars", "efivarfs", 0, NULL));
+
 #undef CHECKCALL
 
     SetStdioToDevNull(argv);
@@ -414,6 +426,16 @@ int FirstStageMain(int argc, char** argv) {
 
     LOGI("init first stage started!");
 
+    if (minimal_systems::bootcfg::IsEnabled("nowatchdog")) {
+        LOGI("Disabling watchdog from bootcfg");
+    }
+
+    std::string mode = minimal_systems::bootcfg::Get("sysboot.production_build", "true");
+    if (mode == "false") {
+        LOGI("Development mode enabled");
+        setenv("INIT_DEV_BUILD", "1", 1);
+    }
+
     auto old_root_dir = std::unique_ptr<DIR, decltype(&closedir)>{opendir("/"), closedir};
     if (!old_root_dir) {
         LOGE("Could not opendir(\"/\"), not freeing ramdisk");
@@ -425,6 +447,19 @@ int FirstStageMain(int argc, char** argv) {
         old_root_dir.reset();
     }
 
+    int want_console = 0;
+    if (ALLOW_FIRST_STAGE_CONSOLE) {
+        want_console = minimal_systems::init::FirstStageConsole(
+            minimal_systems::bootcfg::Get(""),                      // full merged cmdline string
+            minimal_systems::bootcfg::Get("bootconfig", "")         // bootconfig override if set
+        );
+    }
+
+    if (want_console) {
+        minimal_systems::init::StartConsole(minimal_systems::bootcfg::Get(""));
+    }
+
+
     GetBootMode(cmdline, GetProperty("ro.bootmode"));
 
     GetPageSizeSuffix();
@@ -433,6 +468,7 @@ int FirstStageMain(int argc, char** argv) {
 
     DetectAndSetGPUType();
     FreeRamdisk();
+
     return 0;
 }
 

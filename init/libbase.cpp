@@ -20,6 +20,10 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <regex>
+#include <string>
+#include <unistd.h>
+
 
 namespace minimal_systems {
 namespace base {
@@ -93,6 +97,66 @@ bool ReadFileToString(const std::string& path, std::string* content) {
     *content = buffer.str();
     return true;
 }
+
+
+/**
+ * Cleans a raw command line string:
+ *  - Strips everything after '#' (comments)
+ *  - Collapses whitespace to a single space
+ *  - Trims leading/trailing whitespace
+ */
+ std::string CleanCmdline(const std::string& input) {
+     std::stringstream ss(input);
+     std::string line;
+     std::string result;
+
+     while (std::getline(ss, line)) {
+         // Trim leading/trailing whitespace
+         line = std::regex_replace(line, std::regex(R"(^\s+|\s+$)"), "");
+
+         // Skip empty or full-line comments
+         if (line.empty() || line[0] == '#') continue;
+
+         // Strip inline comment
+         size_t comment_pos = line.find('#');
+         if (comment_pos != std::string::npos) {
+             line = line.substr(0, comment_pos);
+             line = std::regex_replace(line, std::regex(R"(^\s+|\s+$)"), "");
+         }
+
+         // Collapse inner whitespace
+         line = std::regex_replace(line, std::regex(R"([\s]+)"), " ");
+
+         if (!line.empty()) {
+             if (!result.empty()) result += ' ';
+             result += line;
+         }
+     }
+
+     return result;
+ }
+
+/**
+ * Appends the cleaned contents of `./.cmdline` to `merged_cmdline` if present.
+ */
+void AppendLocalCmdline(std::string* merged_cmdline) {
+    std::string local_cmdline;
+    if (!ReadFileToString("./.cmdline", &local_cmdline)) {
+        return;
+    }
+
+    local_cmdline = CleanCmdline(local_cmdline);
+    if (local_cmdline.empty()) {
+        return;
+    }
+
+    if (!merged_cmdline->empty() && merged_cmdline->back() != ' ') {
+        *merged_cmdline += ' ';
+    }
+
+    *merged_cmdline += local_cmdline;
+}
+
 
 }  // namespace base
 }  // namespace minimal_systems

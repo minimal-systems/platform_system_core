@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 The Android Open Source Project
+ * Copyright (C) 2020 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,15 +14,22 @@
  * limitations under the License.
  */
 
-#pragma once
+ #pragma once
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-/* Returns `1` if the device is debuggable or `0` if not. */
-int __linux_log_is_debuggable();
-
-#ifdef __cplusplus
-}
-#endif
+ #include <string>
+ 
+ namespace minimal_systems {
+ namespace init {
+ 
+ enum FirstStageConsoleParam {
+     DISABLED = 0,
+     CONSOLE_ON_FAILURE = 1,
+     IGNORE_FAILURE = 2,
+     MAX_PARAM_VALUE = IGNORE_FAILURE,
+ };
+ 
+ void StartConsole(const std::string& cmdline);
+ int FirstStageConsole(const std::string& cmdline, const std::string& bootconfig);
+ 
+ }  // namespace init
+ }  // namespace android

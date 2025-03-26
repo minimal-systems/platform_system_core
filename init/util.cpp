@@ -243,24 +243,76 @@ std::string ReadFirstLine(const std::string& path) {
     return line;
 }
 
+std::string Trim(const std::string& str) {
+    size_t start = str.find_first_not_of(" \t\r\n");
+    size_t end = str.find_last_not_of(" \t\r\n");
+    return (start == std::string::npos) ? "" : str.substr(start, end - start + 1);
+}
+
+bool FileContains(const std::string& path, const std::string& token) {
+    std::ifstream file(path);
+    std::string line;
+    while (std::getline(file, line)) {
+        if (line.find(token) != std::string::npos) return true;
+    }
+    return false;
+}
+
+std::string ReadFile(const std::string& path) {
+    std::ifstream file(path);
+    std::stringstream buffer;
+    buffer << file.rdbuf();
+    return buffer.str();
+}
+
 void DetectAndSetGPUType() {
     if (FileExists("/proc/driver/nvidia/version")) {
         LOGI("GPU: NVIDIA detected");
         setprop("ro.boot.gpu", "nvidia");
-    } else if (FileExists("/sys/class/drm/card0/device/vendor")) {
-        std::string vendor_id = ReadFirstLine("/sys/class/drm/card0/device/vendor");
-        if (vendor_id == "0x1002") {
-            LOGI("GPU: AMD detected");
-            setprop("ro.boot.gpu", "amd");
-        } else {
-            LOGW("GPU: Unknown vendor");
-            setprop("ro.boot.gpu", "unknown");
-        }
-    } else {
-        LOGW("GPU: None detected");
-        setprop("ro.boot.gpu", "none");
+        return;
     }
+
+    const std::string kVendorPath = "/sys/class/drm/card0/device/vendor";
+    const std::string kModelPath = "/sys/class/drm/card0/device/uevent";
+
+    if (FileExists(kVendorPath)) {
+        std::string vendor = Trim(ReadFirstLine(kVendorPath));
+        const char* gpu_type = "unknown";
+
+        if (vendor == "0x1002") {
+            gpu_type = "amd";
+        } else if (vendor == "0x8086") {
+            gpu_type = "intel";
+        } else {
+            // Check model path for ARM GPUs (Mali, PowerVR, etc.)
+            if (FileExists(kModelPath)) {
+                std::string uevent = ReadFile(kModelPath);
+                if (uevent.find("MALI") != std::string::npos ||
+                    uevent.find("mali") != std::string::npos) {
+                    gpu_type = "mali";
+                } else if (uevent.find("powervr") != std::string::npos) {
+                    gpu_type = "powervr";
+                }
+            }
+        }
+
+        LOGI("GPU: %s detected (vendor=%s)", gpu_type, vendor.c_str());
+        setprop("ro.boot.gpu", gpu_type);
+        setprop("ro.boot.gpu.vendor_id", vendor);
+        return;
+    }
+
+    // Fallback: ARM or ARM64 platform detection
+    if (FileContains("/proc/cpuinfo", "ARM") || FileContains("/proc/cpuinfo", "aarch64")) {
+        LOGI("GPU: ARM64/ARM platform detected");
+        setprop("ro.boot.gpu", "arm");
+        return;
+    }
+
+    LOGI("GPU: Not detected");
+    setprop("ro.boot.gpu", "none");
 }
+
 
 // Function to write a string to a file descriptor
 bool WriteStringToFd(const std::string& content, int fd) {
