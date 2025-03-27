@@ -64,6 +64,15 @@ std::string GetProperty(const std::string& key);
  * @return true on success, false on failure.
  */
 bool WriteStringToFd(const std::string& content, int fd);
+
+/**
+ * Returns a copy of the input string with leading and trailing whitespace removed.
+ *
+ * @param s The input string
+ * @return A trimmed copy of the input
+ */
+std::string trim_copy(const std::string& s);
+
 }  // namespace init
 }  // namespace minimal_systems
 

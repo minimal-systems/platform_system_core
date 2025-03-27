@@ -454,6 +454,7 @@ int FirstStageMain(int argc, char** argv) {
     if (mode == "false") {
         LOGI("Development mode enabled");
         setenv("INIT_DEV_BUILD", "1", 1);
+
     }
 
     auto dir_deleter = [](DIR* d) {

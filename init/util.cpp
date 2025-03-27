@@ -375,6 +375,7 @@ void DetectAndSetGPUType() {
     LOGI("GPU: Not detected");
 }
 
+
 /**
  * Writes the provided string to a file descriptor.
  *
@@ -387,6 +388,26 @@ void DetectAndSetGPUType() {
 bool WriteStringToFd(const std::string& content, int fd) {
     ssize_t written = write(fd, content.c_str(), content.size());
     return written == static_cast<ssize_t>(content.size());
+}
+
+/**
+ * Returns a copy of the input string with leading and trailing whitespace removed.
+ *
+ * @param s The input string
+ * @return A trimmed copy of the input
+ */
+std::string trim_copy(const std::string& s) {
+    size_t start = 0;
+    while (start < s.length() && std::isspace(static_cast<unsigned char>(s[start]))) {
+        ++start;
+    }
+
+    size_t end = s.length();
+    while (end > start && std::isspace(static_cast<unsigned char>(s[end - 1]))) {
+        --end;
+    }
+
+    return s.substr(start, end - start);
 }
 
 

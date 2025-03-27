@@ -27,6 +27,7 @@ set(INIT_SOURCES
     reboot_utils.cpp
     capabilities.cpp
     bootcfg.cpp
+    ueventhandler.cpp
 )
 
 # Compiler flags

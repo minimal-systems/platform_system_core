@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <exception>
+#include <filesystem>
 #include <iostream>
 #include <map>
 #include <unordered_map>
@@ -20,6 +21,8 @@
 namespace minimal_systems {
 namespace init {
 
+namespace fs = std::filesystem;
+
 // Function declarations
 void prepare_log(char** argv);
 bool PerformFirstStageMount();
@@ -32,8 +35,8 @@ bool parse_init();
  * Responsibilities:
  * - Load system properties
  * - Initialize SELinux
+ * - Detect default user from /home
  * - Parse init scripts
- * - Report system state
  *
  * @param argc Number of arguments (unused)
  * @param argv Argument values from the kernel (used for SELinux setup)
@@ -48,9 +51,35 @@ int SecondStageMain(int argc, char** argv) {
         props.loadProperties("etc/prop.default");
         props.loadProperties("usr/share/etc/prop.default");
 
-        // Initialize SELinux policy, contexts, and transition
+        // Initialize SELinux policy, contexts, and transitions
         SetupSelinux(argv);
         LOGI("SELinux configuration loaded.");
+
+        // Detect and set default user from /home before parsing init
+        try {
+            const fs::path home_dir("/home");
+            if (!fs::exists(home_dir) || !fs::is_directory(home_dir)) {
+                LOGW("Home directory not found or not a directory. Skipping ro.boot.user assignment.");
+            } else {
+                std::vector<std::string> user_folders;
+                for (const auto& entry : fs::directory_iterator(home_dir)) {
+                    if (entry.is_directory()) {
+                        user_folders.push_back(entry.path().filename().string());
+                    }
+                }
+
+                if (user_folders.size() == 1) {
+                    const std::string& username = user_folders[0];
+                    props.set("ro.boot.user", username);
+                    LOGI("Set ro.boot.user = %s", username.c_str());
+                } else {
+                    LOGW("Expected exactly one user folder in /home, found %zu. Skipping ro.boot.user.",
+                         user_folders.size());
+                }
+            }
+        } catch (const std::exception& ex) {
+            LOGE("Failed to determine home user: %s", ex.what());
+        }
 
         // Parse init.rc or similar boot scripts
         if (!parse_init()) {
@@ -73,14 +102,12 @@ int SecondStageMain(int argc, char** argv) {
             sortedProperties.emplace_back(entry);
         }
 
-        // Sort properties lexicographically by key
         std::sort(sortedProperties.begin(), sortedProperties.end(),
                   [](const std::pair<std::string, std::string>& a,
                      const std::pair<std::string, std::string>& b) {
                       return a.first < b.first;
                   });
 
-        // Output sorted property list to log
         for (const auto& [key, value] : sortedProperties) {
             LOGI("  %s = %s", key.c_str(), value.c_str());
         }
@@ -88,11 +115,9 @@ int SecondStageMain(int argc, char** argv) {
         return EXIT_SUCCESS;
 
     } catch (const std::exception& ex) {
-        // Catch and log known C++ exceptions
         LOGE("Unhandled exception: %s", ex.what());
         return EXIT_FAILURE;
     } catch (...) {
-        // Catch and log unknown errors
         LOGE("Unknown error occurred. Exiting...");
         return EXIT_FAILURE;
     }
