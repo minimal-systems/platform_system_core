@@ -43,6 +43,7 @@ class PropertyManager {
 std::string getprop(const std::string& key);
 void setprop(const std::string& key, const std::string& value);
 void resetprop(const std::string& key);  // Global resetprop function
+std::string resolve_prop_substitutions(const std::string& line);
 
 }  // namespace init
 }  // namespace minimal_systems

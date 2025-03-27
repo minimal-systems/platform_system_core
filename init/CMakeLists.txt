@@ -28,6 +28,7 @@ set(INIT_SOURCES
     capabilities.cpp
     bootcfg.cpp
     ueventhandler.cpp
+    ueventgroups.cpp
 )
 
 # Compiler flags

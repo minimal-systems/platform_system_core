@@ -138,6 +138,7 @@ bool parse_rc_file(const std::string& filepath) {
 
         if (starts_with(line, "import ")) {
             std::string import_path = trim_copy(line.substr(7));
+            import_path = resolve_prop_substitutions(import_path);
             substitute_props(import_path);
             if (!parse_rc_file(import_path)) {
                 LOGW("Failed to import RC file: %s", import_path.c_str());

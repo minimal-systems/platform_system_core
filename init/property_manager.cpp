@@ -186,7 +186,6 @@ void PropertyManager::set(const std::string& key, const std::string& value) {
         persistentProperties[key] = value;
     }
 }
-
 // Global functions
 std::string getprop(const std::string& key) {
     return PropertyManager::instance().getprop(key);
