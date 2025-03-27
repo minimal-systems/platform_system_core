@@ -6,12 +6,6 @@
  * You may obtain a copy of the License at
  *
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
  */
 
 #include "exthandler.h"
@@ -30,6 +24,12 @@
 #include <unordered_map>
 #include <vector>
 
+/**
+ * Trims leading and trailing spaces from a string.
+ *
+ * @param str The input string to trim.
+ * @return A string with whitespace removed from both ends.
+ */
 std::string Trim(const std::string& str) {
     size_t first = str.find_first_not_of(" ");
     if (first == std::string::npos) return "";
@@ -37,6 +37,13 @@ std::string Trim(const std::string& str) {
     return str.substr(first, last - first + 1);
 }
 
+/**
+ * Splits a string into tokens using the specified delimiter.
+ *
+ * @param str The input string.
+ * @param delimiter The delimiter to split on.
+ * @return A vector of substrings.
+ */
 std::vector<std::string> Split(const std::string& str, const std::string& delimiter) {
     std::vector<std::string> tokens;
     size_t start = 0, end;
@@ -48,6 +55,13 @@ std::vector<std::string> Split(const std::string& str, const std::string& delimi
     return tokens;
 }
 
+/**
+ * Reads all available data from a file descriptor into a string.
+ *
+ * @param fd A readable file descriptor.
+ * @param content Pointer to string that will receive the data.
+ * @return true on success, false on error.
+ */
 bool ReadFdToString(int fd, std::string* content) {
     char buffer[1024];
     ssize_t bytes_read;
@@ -58,6 +72,16 @@ bool ReadFdToString(int fd, std::string* content) {
     return bytes_read >= 0;
 }
 
+/**
+ * Creates a socketpair and assigns file descriptors.
+ *
+ * @param domain Socket domain (e.g., AF_UNIX).
+ * @param type Socket type (e.g., SOCK_STREAM).
+ * @param protocol Usually 0.
+ * @param fd1[out] First file descriptor.
+ * @param fd2[out] Second file descriptor.
+ * @return true on success, false on failure.
+ */
 bool Socketpair(int domain, int type, int protocol, int* fd1, int* fd2) {
     int sv[2];
     if (socketpair(domain, type, protocol, sv) == -1) {
@@ -68,10 +92,30 @@ bool Socketpair(int domain, int type, int protocol, int* fd1, int* fd2) {
     return true;
 }
 
+/**
+ * Executes an external handler binary with environment overrides and UID/GID.
+ *
+ * - Forks a child process
+ * - Sets environment variables
+ * - Drops privileges (setuid/setgid)
+ * - Redirects stdout/stderr to capture output
+ * - Executes the handler command
+ *
+ * Captured stdout is returned as string if execution succeeds.
+ * Captured stderr is logged. All failures result in empty string return.
+ *
+ * @param handler The command to execute (e.g. "/bin/myscript --flag").
+ * @param uid The user ID to switch to before exec.
+ * @param gid The group ID to switch to before exec.
+ * @param envs_map A map of environment variables to apply before exec.
+ * @return The trimmed stdout content on success, empty string otherwise.
+ */
 std::string RunExternalHandler(const std::string& handler, uid_t uid, gid_t gid,
                                std::unordered_map<std::string, std::string>& envs_map) {
     int child_stdout, parent_stdout;
     int child_stderr, parent_stderr;
+
+    // Create pipes to capture stdout and stderr from the child process
     if (!Socketpair(AF_UNIX, SOCK_STREAM, 0, &child_stdout, &parent_stdout) ||
         !Socketpair(AF_UNIX, SOCK_STREAM, 0, &child_stderr, &parent_stderr)) {
         LOGE("Socketpair() failed");
@@ -86,21 +130,26 @@ std::string RunExternalHandler(const std::string& handler, uid_t uid, gid_t gid,
     }
 
     if (pid == 0) {
+        // Child process setup
         for (const auto& [key, value] : envs_map) {
             setenv(key.c_str(), value.c_str(), 1);
         }
+
+        // Redirect I/O
         close(parent_stdout);
         close(parent_stderr);
         dup2(child_stdout, STDOUT_FILENO);
         dup2(child_stderr, STDERR_FILENO);
 
+        // Prepare argv[]
         auto args = Split(handler, " ");
         std::vector<char*> c_args;
         for (auto& arg : args) {
             c_args.emplace_back(arg.data());
         }
-        c_args.emplace_back(nullptr);
+        c_args.emplace_back(nullptr);  // null-terminate the argv array
 
+        // Drop privileges
         if (gid != 0 && setgid(gid) != 0) {
             fprintf(stderr, "setgid() failed: %s", strerror(errno));
             _exit(EXIT_FAILURE);
@@ -111,11 +160,13 @@ std::string RunExternalHandler(const std::string& handler, uid_t uid, gid_t gid,
             _exit(EXIT_FAILURE);
         }
 
+        // Execute handler
         execv(c_args[0], c_args.data());
         fprintf(stderr, "exec() failed: %s", strerror(errno));
         _exit(EXIT_FAILURE);
     }
 
+    // Parent process cleanup
     close(child_stdout);
     close(child_stderr);
 
@@ -143,6 +194,7 @@ std::string RunExternalHandler(const std::string& handler, uid_t uid, gid_t gid,
         LOGE("ReadFdToString() for stderr failed");
     }
 
+    // Process exit handling
     if (WIFEXITED(status)) {
         if (WEXITSTATUS(status) == EXIT_SUCCESS) {
             return Trim(stdout_content);
@@ -154,6 +206,7 @@ std::string RunExternalHandler(const std::string& handler, uid_t uid, gid_t gid,
         LOGE("Killed by signal %d", WTERMSIG(status));
         return "";
     }
+
     LOGE("Unexpected exit status %d", status);
     return "";
 }

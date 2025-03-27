@@ -1,6 +1,9 @@
+// first_stage_mount.cpp — Handles first-stage mounting during init
+
 #define LOG_TAG "init"
 
 #include "first_stage_mount.h"
+
 #include <sys/stat.h>
 #include <algorithm>
 #include <fstream>
@@ -8,6 +11,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
+
 #include "fs_mgr.h"
 #include "log_new.h"
 #include "property_manager.h"
@@ -16,7 +20,12 @@
 namespace minimal_systems {
 namespace init {
 
-// Helper function to normalize paths (remove duplicate slashes)
+/**
+ * Normalize a file path by removing duplicate slashes.
+ *
+ * @param path The raw input path string.
+ * @return A cleaned-up path string with redundant '/' removed.
+ */
 std::string normalize_path(const std::string& path) {
     std::string result;
     std::unique_copy(path.begin(), path.end(), std::back_inserter(result),
@@ -24,6 +33,13 @@ std::string normalize_path(const std::string& path) {
     return result;
 }
 
+/**
+ * Parse a given fstab file and mount entries marked with 'verify' or 'overlay'.
+ *
+ * Supports overlayfs mounts explicitly. Logs all issues and aborts on fatal errors.
+ *
+ * @param filepath The absolute path to the fstab file.
+ */
 void parse_fstab_file(const std::string& filepath) {
     std::ifstream file(filepath);
     if (!file.is_open()) {
@@ -38,13 +54,13 @@ void parse_fstab_file(const std::string& filepath) {
     while (std::getline(file, line)) {
         ++line_number;
 
-        // Trim leading whitespace
+        // Remove leading whitespace
         line.erase(0, line.find_first_not_of(" \t"));
         if (line.empty() || line[0] == '#') {
-            continue;  // Skip empty lines or comments silently
+            continue;  // Skip comments and blank lines
         }
 
-        // Parse the line into device, mount point, filesystem, and options
+        // Parse expected fields from fstab line
         std::istringstream iss(line);
         std::string device, mount_point, filesystem, options;
 
@@ -53,22 +69,22 @@ void parse_fstab_file(const std::string& filepath) {
             continue;
         }
 
-        // Check if the entry has the 'verify' flag
+        // Only process entries marked with 'verify' unless it's an overlay
         if (options.find("verify") == std::string::npos && filesystem != "overlay") {
-            continue;  // Skip non-verify entries, unless it's an overlay entry
+            continue;
         }
 
         if (filesystem == "overlay") {
-            // Handle overlayfs mounting
+            // Mount overlayfs partition
             if (!minimal_systems::fs_mgr::MountOverlayFs(mount_point)) {
                 LOGE("Overlay mount failed for mount point '%s' on line %d. Aborting.",
                      mount_point.c_str(), line_number);
                 std::exit(-1);
             }
-            continue;  // Skip further processing for overlay entries
+            continue;  // Skip further handling for overlay entries
         }
 
-        // Log warning if the device doesn't exist
+        // Warn if the device node does not exist
         struct stat buffer;
         if (stat(device.c_str(), &buffer) != 0) {
             LOGW("Device '%s' does not exist or cannot be opened. Proceeding with mount attempt.",
@@ -86,14 +102,21 @@ void parse_fstab_file(const std::string& filepath) {
     LOGI("Fstab file parsing completed.");
 }
 
-// Function to load fstab from a list of paths, first without normalization, then with normalization
+/**
+ * Try to load a valid fstab file from a list of candidate paths.
+ *
+ * Attempts normalized and unnormalized paths. Falls back to /etc/fstab if all else fails.
+ *
+ * @param fstab_paths A list of possible fstab file locations.
+ * @return True if a valid fstab was found and parsed successfully; otherwise, exits.
+ */
 bool load_fstab(const std::vector<std::string>& fstab_paths) {
     auto& props = PropertyManager::instance();
     (void)props;
     std::string hardware = getprop("ro.boot.hardware");
 
     for (const auto& path : fstab_paths) {
-        // First check without normalization
+        // Try original path first
         std::ifstream file(path);
         if (file) {
             LOGI("fstab '%s' found for hardware '%s' without normalization", path.c_str(),
@@ -102,7 +125,7 @@ bool load_fstab(const std::vector<std::string>& fstab_paths) {
             return true;
         }
 
-        // Then check with normalization
+        // Try normalized version of the path
         std::string normalized_path = normalize_path(path);
         file.open(normalized_path);
         if (file) {
@@ -115,7 +138,7 @@ bool load_fstab(const std::vector<std::string>& fstab_paths) {
         LOGW("fstab '%s' not found; continuing to next option", path.c_str());
     }
 
-    // Final fallback to /etc/fstab
+    // Try fallback location: /etc/fstab
     std::ifstream fallback_file("/etc/fstab");
     if (fallback_file) {
         LOGI("Using fallback fstab '/etc/fstab' for hardware '%s'", hardware.c_str());
@@ -127,13 +150,24 @@ bool load_fstab(const std::vector<std::string>& fstab_paths) {
     std::exit(-1);
 }
 
-// Main function for first-stage mounting process
+/**
+ * Main entry for first-stage mount operations.
+ *
+ * Selects fstab file(s) based on boot mode (normal or recovery) and mounts
+ * partitions flagged with 'verify' or overlayfs entries.
+ *
+ * @return True on successful mounting; exits on error.
+ */
 bool PerformFirstStageMount() {
     auto& props = PropertyManager::instance();
     (void)props;
     std::string boot_mode = getprop("ro.boot.mode");
 
-    const std::vector<std::string> fstab_paths = {"etc/fstab", "usr/share/etc/fstab", "/etc/fstab"};
+    const std::vector<std::string> fstab_paths = {
+        "etc/fstab",
+        "usr/share/etc/fstab",
+        "/etc/fstab"
+    };
 
     if (boot_mode == "recovery") {
         LOGI("Boot mode: 'recovery'; attempting to load recovery fstab paths.");
@@ -142,8 +176,8 @@ bool PerformFirstStageMount() {
         LOGI("Boot mode: 'normal'; attempting to load normal fstab paths.");
         return load_fstab(fstab_paths);
     }
-    // after the overlayfs is mounted, the system will sync
-    // and proceed with the next stage of the boot process
+
+    // After overlayfs is mounted, system will continue to next init phase.
 }
 
 }  // namespace init

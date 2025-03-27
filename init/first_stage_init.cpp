@@ -1,3 +1,16 @@
+/**
+ * @file first_stage_main.cpp
+ * @brief Minimal init first-stage entry point.
+ *
+ * Responsibilities:
+ * - Mount essential filesystems (/proc, /sys, /dev, /mnt, etc.)
+ * - Initialize logging, stdio, and SELinux
+ * - Detect boot modes (normal, recovery, charger)
+ * - Load kernel modules
+ * - Run first-stage console or scripts
+ * - Prepare switch to second-stage root
+ */
+
 #define LOG_TAG "init"
 
 #include <dirent.h>
@@ -347,6 +360,7 @@ static std::unique_ptr<FirstStageMount> CreateFirstStageMount(const std::string&
 */
 
 int FirstStageMain(int argc, char** argv) {
+    int dummy_count = 0;
     LOGD("Compiled on %s at %s\n", __DATE__, __TIME__);
 
     if (REBOOT_BOOTLOADER_ON_PANIC) {
@@ -471,7 +485,6 @@ int FirstStageMain(int argc, char** argv) {
         minimal_systems::init::StartConsole(minimal_systems::bootcfg::Get(""));
     }
 
-
     GetBootMode(cmdline, GetProperty("ro.bootmode"));
 
     GetPageSizeSuffix();
@@ -480,11 +493,8 @@ int FirstStageMain(int argc, char** argv) {
 
     DetectAndSetGPUType();
     FreeRamdisk();
-    if (IsChargerMode()) LOGD("Stub: Charger mode detected (no-op)");
-    if (IsNormalBootForced()) LOGD("Stub: Normal boot forced (no-op)");
-    PrepareSwitchRoot();  // no-op call to mark usage
+    PrepareSwitchRoot();
 
-    int dummy_count = 0;
     LoadKernelModules(BootMode::NORMAL_MODE, false, false, dummy_count);  // dry-run
 
     // Perform first-stage mounting
