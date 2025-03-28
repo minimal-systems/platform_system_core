@@ -17,6 +17,7 @@
 
 #define LOG_TAG "init"
 #include "log_new.h"
+#include "action_manager.h"
 
 namespace minimal_systems {
 namespace init {
@@ -44,6 +45,7 @@ bool parse_init();
  */
 int SecondStageMain(int argc, char** argv) {
     (void)argc;
+    auto& am = GetActionManager();
 
     try {
         // Load properties from known system defaults
@@ -81,16 +83,6 @@ int SecondStageMain(int argc, char** argv) {
             LOGE("Failed to determine home user: %s", ex.what());
         }
 
-        // Parse init.rc or similar boot scripts
-        if (!parse_init()) {
-            LOGE("Parsing init configurations failed. Exiting...");
-            return EXIT_FAILURE;
-        }
-        LOGI("Initialization configurations parsed successfully.");
-
-        // Mark init as completed for dependent services
-        props.set("init.completed", "true");
-
         // Log all loaded properties (sorted for readability/debugging)
         LOGI("Loaded Properties:");
 
@@ -112,6 +104,35 @@ int SecondStageMain(int argc, char** argv) {
             LOGI("  %s = %s", key.c_str(), value.c_str());
         }
 
+        // Parse init.rc or similar boot scripts
+        if (!parse_init()) {
+            LOGE("Parsing init configurations failed. Exiting...");
+            return EXIT_FAILURE;
+        }
+        am.QueueBuiltinAction([]() {
+            LOGI("SetupCgroups running...");
+            // perform setup
+        }, "SetupCgroups");
+    
+        am.QueueEventTrigger("early-init");
+    
+        am.QueueBuiltinAction([]() {
+            LOGI("Post-boot lambda running...");
+        }, "LateInit");
+    
+        // Simulate main loop
+        while (true) {
+            am.ExecuteNext();
+            sleep(1);
+        }
+    
+        LOGI("Initialization configurations parsed successfully.");
+
+        // Mark init as completed for dependent services
+        props.set("init.completed", "true");
+
+
+        
         return EXIT_SUCCESS;
 
     } catch (const std::exception& ex) {

@@ -21,8 +21,10 @@
 
 #include "log_new.h"
 #include "property_manager.h"
-#include "util.h"
+#include "service.h"
 #include "ueventhandler.h"
+#include "util.h"
+#include "action.h"
 
 namespace minimal_systems {
 namespace init {
@@ -83,13 +85,6 @@ bool starts_with(const std::string& line, const std::string& prefix) {
     return line.rfind(prefix, 0) == 0;
 }
 
-struct TriggerBlock {
-    std::string condition;
-    std::vector<std::string> commands;
-};
-
-static std::vector<TriggerBlock> trigger_blocks;
-
 /**
  * Parse a single .rc file and apply configuration.
  *
@@ -148,9 +143,61 @@ bool parse_rc_file(const std::string& filepath) {
 
         if (starts_with(line, "on ")) {
             current_block = "on";
-            std::string condition = trim_copy(line.substr(3));
-            trigger_blocks.emplace_back(TriggerBlock{condition, {}});
-            LOGI("Registered trigger block: %s", condition.c_str());
+
+            // Extract the full condition string after "on"
+            std::string condition_str = trim_copy(line.substr(3));
+            LOGI("Parsing 'on' trigger line: %s", condition_str.c_str());
+
+            std::istringstream iss(condition_str);
+            std::string token;
+            std::vector<TriggerCondition> conditions;
+
+            // Split on "&&" (with optional whitespace)
+            while (std::getline(iss, token, '&')) {
+                trim(token);
+
+                // Skip empty tokens (from consecutive '&&' or trailing '&')
+                if (token.empty() || token == "&") {
+                    LOGW("Skipped empty condition token in trigger: '%s'", condition_str.c_str());
+                    continue;
+                }
+
+                // Handle property-based condition
+                if (starts_with(token, "property:")) {
+                    std::string prop_expr = token.substr(9);  // Remove "property:"
+                    size_t eq_pos = prop_expr.find('=');
+
+                    if (eq_pos != std::string::npos) {
+                        std::string prop_key = trim_copy(prop_expr.substr(0, eq_pos));
+                        std::string prop_val = trim_copy(prop_expr.substr(eq_pos + 1));
+                        LOGI("Detected property condition: [%s = %s]", prop_key.c_str(),
+                             prop_val.c_str());
+
+                        conditions.push_back(TriggerCondition{
+                                .type = "property", .key = prop_key, .value = prop_val});
+                    } else {
+                        LOGW("Malformed property trigger (missing '=' symbol): %s", token.c_str());
+                    }
+
+                } else {
+                    // Treat as a generic named trigger, e.g., "boot", "post-fs", "early-init"
+                    LOGI("Detected generic trigger condition: [%s]", token.c_str());
+
+                    conditions.push_back(TriggerCondition{.type = token, .key = "", .value = ""});
+                }
+            }
+
+            if (!conditions.empty()) {
+                // Register the trigger block for deferred execution
+                trigger_blocks.push_back(TriggerBlock{.conditions = conditions, .commands = {}});
+
+                LOGI("Registered 'on' trigger block with %zu condition(s): %s", conditions.size(),
+                     condition_str.c_str());
+
+            } else {
+                LOGW("No valid conditions found in 'on' block: %s", condition_str.c_str());
+            }
+
             continue;
         }
 
@@ -192,7 +239,8 @@ bool parse_rc_file(const std::string& filepath) {
                     struct group* gr = getgrnam(group.c_str());
                     if (pw && gr) {
                         if (chown(dir_path.c_str(), pw->pw_uid, gr->gr_gid) == 0) {
-                            LOGI("Set owner of %s to %s:%s", dir_path.c_str(), user.c_str(), group.c_str());
+                            LOGI("Set owner of %s to %s:%s", dir_path.c_str(), user.c_str(),
+                                 group.c_str());
                         } else {
                             LOGW("Failed to chown %s: %s", dir_path.c_str(), strerror(errno));
                         }
@@ -259,7 +307,20 @@ bool parse_rc_file(const std::string& filepath) {
         if (starts_with(line, "service ")) {
             current_block = "service";
             LOGI("Service block: %s", line.c_str());
-            // TODO: Store 'service' block with service name and exec args
+            parse_service_block(line, file);  // This consumes the whole block
+            continue;
+        }
+        if (starts_with(line, "start ")) {
+            std::istringstream iss(line);
+            std::string command, service_name;
+            iss >> command >> service_name;
+            trim(service_name);
+            if (service_name.empty()) {
+                LOGW("Malformed start line: %s", line.c_str());
+                continue;
+            }
+            LOGI("Starting service: %s", service_name.c_str());
+            start_service_by_name(service_name);  // Correct function call
             continue;
         }
 

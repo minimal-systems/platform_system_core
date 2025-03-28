@@ -6,6 +6,8 @@ set(ROOTFS_INSTALL_DIR "${BUILD_TOP}/out/target/product/generic/rootfs")
 
 # Define source files for init
 set(INIT_SOURCES
+    action.cpp
+    action_manager.cpp
     main.cpp
     init.cpp
     selinux.cpp
@@ -29,6 +31,7 @@ set(INIT_SOURCES
     bootcfg.cpp
     ueventhandler.cpp
     ueventgroups.cpp
+    service.cpp
 )
 
 # Compiler flags
