@@ -37,7 +37,9 @@ static TriggerCondition parse_condition(const std::string& token) {
             cond.value = token.substr(eq + 1);
         }
     } else {
-        cond.type = token;
+        // treat as trigger name like "boot", "early-init", etc.
+        cond.type = "event";
+        cond.key = token;
     }
 
     return cond;
@@ -52,14 +54,26 @@ bool match_trigger(const TriggerBlock& block, const std::string& event) {
                      cond.key.c_str(), cond.value.c_str(), actual.c_str());
                 return false;
             }
-        } else if (cond.type != event) {
-            LOGD("Event mismatch: expected '%s', got '%s'",
-                 cond.type.c_str(), event.c_str());
-            return false;
         }
     }
+
+    // Now match event type (at least one must match)
+    bool has_event_match = false;
+    for (const auto& cond : block.conditions) {
+        if (cond.type == "event" && cond.key == event) {
+            has_event_match = true;
+            break;
+        }
+    }
+
+    if (!has_event_match) {
+        LOGD("No event match found for trigger: %s", event.c_str());
+        return false;
+    }
+
     return true;
 }
+
 
 void queue_trigger(const std::string& trigger_name) {
     LOGI("Checking trigger blocks for event: %s", trigger_name.c_str());

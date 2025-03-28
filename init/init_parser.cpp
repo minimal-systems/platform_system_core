@@ -143,63 +143,70 @@ bool parse_rc_file(const std::string& filepath) {
 
         if (starts_with(line, "on ")) {
             current_block = "on";
-
-            // Extract the full condition string after "on"
+        
             std::string condition_str = trim_copy(line.substr(3));
-            LOGI("Parsing 'on' trigger line: %s", condition_str.c_str());
-
+            LOGI("Parsing 'on' trigger line: \"%s\"", condition_str.c_str());
+        
             std::istringstream iss(condition_str);
             std::string token;
             std::vector<TriggerCondition> conditions;
-
-            // Split on "&&" (with optional whitespace)
+        
+            size_t cond_index = 0;
             while (std::getline(iss, token, '&')) {
                 trim(token);
-
-                // Skip empty tokens (from consecutive '&&' or trailing '&')
-                if (token.empty() || token == "&") {
-                    LOGW("Skipped empty condition token in trigger: '%s'", condition_str.c_str());
+                if (!token.empty() && token.back() == '&') {
+                    token.pop_back();  // Strip trailing &
+                }
+        
+                if (token.empty()) {
+                    LOGW("Skipped empty or malformed token #%zu in trigger condition: \"%s\"",
+                         cond_index, condition_str.c_str());
                     continue;
                 }
-
-                // Handle property-based condition
+        
+                cond_index++;
+        
                 if (starts_with(token, "property:")) {
-                    std::string prop_expr = token.substr(9);  // Remove "property:"
+                    std::string prop_expr = token.substr(9);
                     size_t eq_pos = prop_expr.find('=');
-
+        
                     if (eq_pos != std::string::npos) {
-                        std::string prop_key = trim_copy(prop_expr.substr(0, eq_pos));
-                        std::string prop_val = trim_copy(prop_expr.substr(eq_pos + 1));
-                        LOGI("Detected property condition: [%s = %s]", prop_key.c_str(),
-                             prop_val.c_str());
-
+                        std::string key = trim_copy(prop_expr.substr(0, eq_pos));
+                        std::string val = trim_copy(prop_expr.substr(eq_pos + 1));
+                        std::string actual = PropertyManager::instance().get(key);
+        
+                        LOGI("Parsed property condition #%zu: property:%s=%s (current: %s)",
+                             cond_index, key.c_str(), val.c_str(), actual.c_str());
+        
                         conditions.push_back(TriggerCondition{
-                                .type = "property", .key = prop_key, .value = prop_val});
+                                .type = "property",
+                                .key = key,
+                                .value = val});
                     } else {
-                        LOGW("Malformed property trigger (missing '=' symbol): %s", token.c_str());
+                        LOGW("Malformed property trigger (missing '='): \"%s\"", token.c_str());
                     }
-
+        
                 } else {
-                    // Treat as a generic named trigger, e.g., "boot", "post-fs", "early-init"
-                    LOGI("Detected generic trigger condition: [%s]", token.c_str());
-
-                    conditions.push_back(TriggerCondition{.type = token, .key = "", .value = ""});
+                    LOGI("Parsed trigger condition #%zu: event type '%s'", cond_index, token.c_str());
+        
+                    conditions.push_back(TriggerCondition{
+                            .type = token,
+                            .key = "",
+                            .value = ""});
                 }
             }
-
+        
             if (!conditions.empty()) {
-                // Register the trigger block for deferred execution
                 trigger_blocks.push_back(TriggerBlock{.conditions = conditions, .commands = {}});
-
-                LOGI("Registered 'on' trigger block with %zu condition(s): %s", conditions.size(),
-                     condition_str.c_str());
-
+                LOGI("Registered 'on' trigger block with %zu condition(s): \"%s\"",
+                     conditions.size(), condition_str.c_str());
             } else {
-                LOGW("No valid conditions found in 'on' block: %s", condition_str.c_str());
+                LOGW("No valid conditions parsed in trigger: \"%s\"", condition_str.c_str());
             }
-
+        
             continue;
         }
+        
 
         if (current_block == "on" && !line.empty()) {
             if (!trigger_blocks.empty()) {
