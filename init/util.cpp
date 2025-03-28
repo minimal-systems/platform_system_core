@@ -17,6 +17,7 @@
 #include <fstream>
 #include <regex>
 #include <string>
+#include <filesystem>
 
 #include "log_new.h"
 #include "bootcfg.h"
@@ -26,6 +27,8 @@ namespace minimal_systems {
 namespace init {
 
 const std::string kDataDirPrefix("/home");
+namespace fs = std::filesystem;
+
 
 /**
  * Decodes a username or UID string into a numeric UID.
@@ -410,6 +413,27 @@ std::string trim_copy(const std::string& s) {
     return s.substr(start, end - start);
 }
 
+std::optional<std::string> getHomeUser() {
+
+    if (!fs::exists(kDataDirPrefix) || !fs::is_directory(kDataDirPrefix)) {
+        LOGW("Home directory not found or not a directory.");
+        return std::nullopt;
+    }
+
+    std::vector<std::string> user_folders;
+    for (const auto& entry : fs::directory_iterator(kDataDirPrefix)) {
+        if (entry.is_directory()) {
+            user_folders.push_back(entry.path().filename().string());
+        }
+    }
+
+    if (user_folders.size() == 1) {
+        return user_folders[0];
+    }
+
+    LOGW("Expected exactly one user folder, found %zu", user_folders.size());
+    return std::nullopt;
+}
 
 }  // namespace init
 }  // namespace minimal_systems

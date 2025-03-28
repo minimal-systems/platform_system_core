@@ -14,6 +14,7 @@
 #include "property_manager.h"
 #include "selinux.h"
 #include "vold.h"
+#include "util.h"
 
 #define LOG_TAG "init"
 #include "log_new.h"
@@ -57,30 +58,10 @@ int SecondStageMain(int argc, char** argv) {
         SetupSelinux(argv);
         LOGI("SELinux configuration loaded.");
 
-        // Detect and set default user from /home before parsing init
-        try {
-            const fs::path home_dir("/home");
-            if (!fs::exists(home_dir) || !fs::is_directory(home_dir)) {
-                LOGW("Home directory not found or not a directory. Skipping ro.boot.user assignment.");
-            } else {
-                std::vector<std::string> user_folders;
-                for (const auto& entry : fs::directory_iterator(home_dir)) {
-                    if (entry.is_directory()) {
-                        user_folders.push_back(entry.path().filename().string());
-                    }
-                }
-
-                if (user_folders.size() == 1) {
-                    const std::string& username = user_folders[0];
-                    props.set("ro.boot.user", username);
-                    LOGI("Set ro.boot.user = %s", username.c_str());
-                } else {
-                    LOGW("Expected exactly one user folder in /home, found %zu. Skipping ro.boot.user.",
-                         user_folders.size());
-                }
-            }
-        } catch (const std::exception& ex) {
-            LOGE("Failed to determine home user: %s", ex.what());
+        if (auto username_opt = getHomeUser(); username_opt.has_value()) {
+            const std::string& username = username_opt.value();
+            props.set("ro.boot.user", username);
+            LOGI("Set ro.boot.user = %s", username.c_str());
         }
 
         // Log all loaded properties (sorted for readability/debugging)
@@ -123,7 +104,6 @@ int SecondStageMain(int argc, char** argv) {
         // Simulate main loop
         while (true) {
             am.ExecuteNext();
-            sleep(1);
         }
     
         LOGI("Initialization configurations parsed successfully.");

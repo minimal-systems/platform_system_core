@@ -73,6 +73,12 @@ bool WriteStringToFd(const std::string& content, int fd);
  */
 std::string trim_copy(const std::string& s);
 
+/**
+ * Detects the default home directory user from /home
+ * @return the username if exactly one is found, std::nullopt otherwise
+ */
+std::optional<std::string> getHomeUser();
+
 }  // namespace init
 }  // namespace minimal_systems
 
